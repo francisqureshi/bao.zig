@@ -15,6 +15,33 @@
 //! interchange with external BLAKE3 ecosystems. See oconnor663/bao#34 for
 //! the spec discussion that motivated this.
 //!
+//! ── PERFORMANCE / FUTURE OPTIMIZATIONS ──────────────────────────────────
+//! This is the scalar reference compression — one 64-byte block at a time,
+//! no SIMD. Measured ~200-250 MB/s/core in ReleaseFast (and ~10x slower in
+//! Debug — always benchmark in ReleaseFast). 100 GB ≈ ~7.5 min single core.
+//! Good enough as a baseline; for the multi-GB ProRes workload we'll want
+//! more. The headroom, highest leverage first:
+//!
+//!   1. Multithread across chunks (~Ncores, ~8x typical). BLAKE3's tree is
+//!      embarrassingly parallel: every chunk's CV is independent, so a thread
+//!      pool can hash chunk ranges concurrently and the cheap tree-combine
+//!      runs after. CPU-bound → use std.Thread, not the async io runtime.
+//!      The catch: `Bao.encodeReader`'s one-chunk lookahead is inherently
+//!      serial, so the parallel path needs a segmented producer (read big
+//!      blocks, dispatch chunk hashing, collect CVs in order) feeding the
+//!      tree — a new code path alongside the streaming one, not a tweak.
+//!   2. SIMD compression via `@Vector(8, u32)` (~5-10x/core). The real BLAKE3
+//!      speed source: a `hash_many` that compresses 8 (AVX2) / 16 (AVX-512)
+//!      independent chunks in parallel lanes. LLVM lowers portable @Vector to
+//!      AVX2/AVX-512/NEON. Bigger rewrite of this file's hot loop.
+//!   3. Both → SIMD × cores ≈ GB/s. 100 GB in ~1 min. The production target.
+//!
+//! Any rewrite must keep producing identical roots — the `Bao.zig` tests
+//! cross-check `encodeReader`/`buildTree` roots and the ≤1-chunk stdlib match,
+//! so a faster compression that passes them is provably equivalent.
+//! The encode read buffer (`Bao.READ_BUF_SIZE`) is already sized above one
+//! chunk so a chunk fills in a single read.
+//!
 //! License: MIT (matches stdlib).
 
 const std = @import("std");
