@@ -25,7 +25,10 @@ const blake3 = @import("blake3_lo.zig");
 const Bao = @This();
 
 pub const Hash = [blake3.digest_length]u8;
-pub const READ_BUF_SIZE = 64 * 1024;
+// 1 MiB: must be >= chunk_length (256 KiB) so a chunk fills in one underlying
+// read instead of several. Cheap throughput win; the real speedup is SIMD +
+// multithreading the compression.
+pub const READ_BUF_SIZE = 1024 * 1024;
 
 const log = std.log.scoped(.bao);
 
