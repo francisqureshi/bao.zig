@@ -26,8 +26,8 @@ const Bao = @This();
 
 pub const Hash = [blake3.digest_length]u8;
 // 1 MiB: must be >= chunk_length (256 KiB) so a chunk fills in one underlying
-// read instead of several. Cheap throughput win; the real speedup is SIMD +
-// multithreading the compression.
+// read instead of several. The encoder batches reads of up to simd_degree
+// chunks and hashes them via SIMD; multithreading is the remaining speedup.
 pub const READ_BUF_SIZE = 1024 * 1024;
 
 const log = std.log.scoped(.bao);
@@ -58,10 +58,13 @@ pub fn encodeFile(
 /// Core encoder: stream `content_length` bytes from `r`, emit outboard to
 /// `out_writer`, return root + counts.
 ///
-/// One-chunk lookahead: the last chunk's bytes are held back until EOF so we
-/// can apply the ROOT flag to it (single-chunk file) or to the final parent
-/// merge that includes it (multi-chunk file). Root CV is NOT emitted to the
-/// outboard — the verifier reconstructs it from its children.
+/// Batched read with a one-piece carry: each read pulls up to `simd_degree`
+/// chunks; everything but the final piece of the buffer is confirmed
+/// not-last and hashed in bulk via `hashManyContiguous`. The final piece is
+/// carried until EOF so the ROOT flag can go on it (single-chunk file) or on
+/// the final parent merge that includes it (multi-chunk file). Root CV is
+/// NOT emitted to the outboard — the verifier reconstructs it from its
+/// children.
 pub fn encodeReader(
     r: *std.Io.Reader,
     content_length: u64,
@@ -84,50 +87,68 @@ pub fn encodeReader(
     var stack_len: usize = 0;
     var n_internal: u64 = 0;
 
-    // Lookahead slot: previously-read chunk that may or may not be last.
-    var pending: [blake3.chunk_length]u8 = undefined;
-    var pending_len: usize = 0;
-    var pending_counter: u64 = 0;
-    var have_pending = false;
-
-    var scratch: [blake3.chunk_length]u8 = undefined;
+    // Batch buffer: holds the carry (≤ 1 chunk, the possibly-last piece) at
+    // the front plus one batch read of up to BATCH_CHUNKS full chunks.
+    const BATCH_CHUNKS = blake3.simd_degree; // 1 ⇒ degenerates to one-chunk flow
+    var buf: [(BATCH_CHUNKS + 1) * blake3.chunk_length]u8 = undefined;
+    var carry_len: usize = 0; // bytes of the held-back piece at buf[0..]
+    var next_counter: u64 = 0; // counter of the OLDEST unhashed piece (the carry)
+    var any_data = false;
 
     while (true) {
-        const n = try r.readSliceShort(&scratch);
+        const n = try r.readSliceShort(buf[carry_len..][0 .. BATCH_CHUNKS * blake3.chunk_length]);
         if (n == 0) break;
+        any_data = true;
+        const total = carry_len + n;
+        const full_pieces = total / blake3.chunk_length;
+        const tail = total % blake3.chunk_length;
+        // Everything before the FINAL piece of `total` is confirmed not-last.
+        // (tail == 0 ⇒ full_pieces ≥ 1 since n ≥ 1.)
+        const hashable = if (tail == 0) full_pieces - 1 else full_pieces;
 
-        // A new chunk arrived → the pending one is confirmed NOT last.
-        if (have_pending) {
-            const cv = blake3.chunkHash(pending[0..pending_len], pending_counter, blake3.iv, .{});
-            stack[stack_len] = cv;
-            stack_len += 1;
+        if (hashable > 0) {
+            std.debug.assert(hashable <= BATCH_CHUNKS);
+            var cvs: [BATCH_CHUNKS][8]u32 = undefined;
+            blake3.hashManyContiguous(
+                buf[0 .. hashable * blake3.chunk_length],
+                next_counter,
+                blake3.iv,
+                cvs[0..hashable],
+            );
+            for (cvs[0..hashable]) |cv| {
+                stack[stack_len] = cv;
+                stack_len += 1;
 
-            const processed = pending_counter + 1;
-            const target_len: usize = @popCount(processed);
-            while (stack_len > target_len) {
-                const left = stack[stack_len - 2];
-                const right = stack[stack_len - 1];
-                const parent = blake3.parentHash(left, right, blake3.iv, .{});
-                stack[stack_len - 2] = parent;
-                stack_len -= 1;
-                try writeCv(out_writer, parent);
-                n_internal += 1;
+                const processed = next_counter + 1;
+                const target_len: usize = @popCount(processed);
+                while (stack_len > target_len) {
+                    const left = stack[stack_len - 2];
+                    const right = stack[stack_len - 1];
+                    const parent = blake3.parentHash(left, right, blake3.iv, .{});
+                    stack[stack_len - 2] = parent;
+                    stack_len -= 1;
+                    try writeCv(out_writer, parent);
+                    n_internal += 1;
+                }
+                next_counter += 1;
             }
         }
 
-        @memcpy(pending[0..n], scratch[0..n]);
-        pending_len = n;
-        pending_counter = if (have_pending) pending_counter + 1 else 0;
-        have_pending = true;
+        // Move the final piece (the new carry) to the front.
+        const carry_start = hashable * blake3.chunk_length;
+        const new_carry_len = total - carry_start; // in [1, chunk_length]
+        if (carry_start != 0) std.mem.copyForwards(u8, buf[0..new_carry_len], buf[carry_start..total]);
+        carry_len = new_carry_len;
     }
 
-    std.debug.assert(have_pending); // content_length > 0 ⇒ at least one chunk
+    // content_length > 0 ⇒ at least one piece.
+    std.debug.assert(any_data and carry_len > 0);
 
-    const total_chunks: u64 = pending_counter + 1;
+    const total_chunks: u64 = next_counter + 1;
 
-    // Single-chunk file: the pending IS the file. Apply ROOT directly.
+    // Single-chunk file: the carry IS the file. Apply ROOT directly.
     if (total_chunks == 1) {
-        const cv = blake3.chunkHash(pending[0..pending_len], 0, blake3.iv, .{ .root = true });
+        const cv = blake3.chunkHash(buf[0..carry_len], 0, blake3.iv, .{ .root = true });
         return .{
             .root = blake3.cvWordsToBytes(cv),
             .content_length = content_length,
@@ -138,7 +159,7 @@ pub fn encodeReader(
 
     // Multi-chunk: hash last chunk WITHOUT ROOT, then climb the stack pairing
     // it with each pending subtree. The final pair gets ROOT and isn't emitted.
-    var current = blake3.chunkHash(pending[0..pending_len], pending_counter, blake3.iv, .{});
+    var current = blake3.chunkHash(buf[0..carry_len], next_counter, blake3.iv, .{});
     while (stack_len > 0) {
         const left = stack[stack_len - 1];
         stack_len -= 1;
@@ -1231,6 +1252,11 @@ test "Bao encode/buildTree root agree across sizes" {
         chunk,    chunk + 1,
         2 * chunk, 2 * chunk + 1,
         1_000_000,
+        // SIMD batch boundaries (simd_degree may be 1 — duplicates harmless).
+        blake3.simd_degree * chunk, // exactly one full vector batch
+        blake3.simd_degree * chunk + 1, // batch + sub-chunk tail
+        (blake3.simd_degree + 1) * chunk, // batch + one scalar-tail full chunk
+        (2 * blake3.simd_degree + 3) * chunk + 12_345, // batches + scalar chunks + partial tail
     };
     for (sizes) |sz| {
         const content = try testing.allocator.alloc(u8, sz);

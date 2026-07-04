@@ -33,7 +33,8 @@
 //!   2. SIMD compression via `@Vector(8, u32)` (~5-10x/core). The real BLAKE3
 //!      speed source: a `hash_many` that compresses 8 (AVX2) / 16 (AVX-512)
 //!      independent chunks in parallel lanes. LLVM lowers portable @Vector to
-//!      AVX2/AVX-512/NEON. Bigger rewrite of this file's hot loop.
+//!      AVX2/AVX-512/NEON. DONE: `hashManyContiguous` below compresses
+//!      `simd_degree` full chunks per iteration in parallel vector lanes.
 //!   3. Both → SIMD × cores ≈ GB/s. 100 GB in ~1 min. The production target.
 //!
 //! Any rewrite must keep producing identical roots — the `Bao.zig` tests
@@ -219,6 +220,133 @@ pub fn parentHash(left_cv: [8]u32, right_cv: [8]u32, key: [8]u32, extra_flags: F
     return cv;
 }
 
+// ---- SIMD many-chunk compression ----
+
+/// Number of independent chunks the vector kernel compresses per iteration
+/// (u32 lanes of the target's preferred vector width; 1 = no SIMD).
+pub const simd_degree: usize = std.simd.suggestVectorLength(u32) orelse 1;
+
+/// Hash many consecutive FULL chunks at once. `data` must hold exactly
+/// `out.len` consecutive full chunks (`data.len == out.len * chunk_length`).
+/// On return, `out[i]` is the chaining value of chunk `i` with counter
+/// `first_counter + i` — bit-identical to
+/// `chunkHash(data[i*chunk_length..][0..chunk_length], first_counter+i, key, .{})`.
+/// Never applies ROOT: a root chunk must go through the scalar `chunkHash`.
+pub fn hashManyContiguous(data: []const u8, first_counter: u64, key: [8]u32, out: [][8]u32) void {
+    std.debug.assert(data.len == out.len * chunk_length);
+    var i: usize = 0;
+    if (comptime simd_degree > 1) {
+        while (i + simd_degree <= out.len) : (i += simd_degree) {
+            chunkHashVec(
+                simd_degree,
+                data[i * chunk_length ..][0 .. simd_degree * chunk_length],
+                first_counter + i,
+                key,
+                out[i..][0..simd_degree],
+            );
+        }
+    }
+    while (i < out.len) : (i += 1) {
+        out[i] = chunkHash(data[i * chunk_length ..][0..chunk_length], first_counter + i, key, .{});
+    }
+}
+
+/// Vector counterpart of `g`: one quarter-round across N lanes.
+inline fn gVec(comptime N: usize, state: *[16]@Vector(N, u32), a: usize, b: usize, c: usize, d: usize, x: @Vector(N, u32), y: @Vector(N, u32)) void {
+    const V = @Vector(N, u32);
+    state[a] +%= state[b] +% x;
+    state[d] = std.math.rotr(V, state[d] ^ state[a], 16);
+    state[c] +%= state[d];
+    state[b] = std.math.rotr(V, state[b] ^ state[c], 12);
+    state[a] +%= state[b] +% y;
+    state[d] = std.math.rotr(V, state[d] ^ state[a], 8);
+    state[c] +%= state[d];
+    state[b] = std.math.rotr(V, state[b] ^ state[c], 7);
+}
+
+/// Vector counterpart of `roundFn`: same message schedule, N lanes.
+fn roundVec(comptime N: usize, state: *[16]@Vector(N, u32), msg: *const [16]@Vector(N, u32), round: usize) void {
+    const schedule = &msg_schedule[round];
+    gVec(N, state, 0, 4, 8, 12, msg[schedule[0]], msg[schedule[1]]);
+    gVec(N, state, 1, 5, 9, 13, msg[schedule[2]], msg[schedule[3]]);
+    gVec(N, state, 2, 6, 10, 14, msg[schedule[4]], msg[schedule[5]]);
+    gVec(N, state, 3, 7, 11, 15, msg[schedule[6]], msg[schedule[7]]);
+    gVec(N, state, 0, 5, 10, 15, msg[schedule[8]], msg[schedule[9]]);
+    gVec(N, state, 1, 6, 11, 12, msg[schedule[10]], msg[schedule[11]]);
+    gVec(N, state, 2, 7, 8, 13, msg[schedule[12]], msg[schedule[13]]);
+    gVec(N, state, 3, 4, 9, 14, msg[schedule[14]], msg[schedule[15]]);
+}
+
+/// Vector counterpart of `compressPre` + the xor-fold of `compressInPlace`:
+/// compress one full 64-byte block per lane, updating `cv` in place. All
+/// lanes share `flags` and `block_length`; counters differ per lane.
+fn compressVec(
+    comptime N: usize,
+    cv: *[8]@Vector(N, u32),
+    block_words: *const [16]@Vector(N, u32),
+    ctr_lo: @Vector(N, u32),
+    ctr_hi: @Vector(N, u32),
+    flags: Flags,
+) void {
+    const V = @Vector(N, u32);
+    var state: [16]V = undefined;
+    for (0..8) |i| state[i] = cv[i];
+    for (0..4) |i| state[i + 8] = @splat(iv[i]);
+    state[12] = ctr_lo;
+    state[13] = ctr_hi;
+    state[14] = @splat(@as(u32, block_length));
+    state[15] = @splat(@as(u32, flags.toInt()));
+    for (0..7) |round| roundVec(N, &state, block_words, round);
+    for (0..8) |i| cv[i] = state[i] ^ state[i + 8];
+}
+
+/// Vector counterpart of `chunkHash` restricted to FULL chunks: hashes N
+/// consecutive full chunks in parallel lanes. Lane `l` gets counter
+/// `first_counter + l`. Never applies ROOT (see `hashManyContiguous`).
+fn chunkHashVec(comptime N: usize, data: []const u8, first_counter: u64, key: [8]u32, out: *[N][8]u32) void {
+    const V = @Vector(N, u32);
+    std.debug.assert(data.len == N * chunk_length);
+
+    var cv: [8]V = undefined;
+    for (0..8) |i| cv[i] = @splat(key[i]);
+
+    var lo: [N]u32 = undefined;
+    var hi: [N]u32 = undefined;
+    for (0..N) |lane| {
+        const counter = first_counter + lane;
+        lo[lane] = counterLow(counter);
+        hi[lane] = counterHigh(counter);
+    }
+    const ctr_lo: V = lo;
+    const ctr_hi: V = hi;
+
+    const num_blocks = chunk_length / block_length; // exact — full chunks only
+    for (0..num_blocks) |b| {
+        var f: Flags = .{};
+        if (b == 0) f = f.with(.{ .chunk_start = true });
+        if (b == num_blocks - 1) f = f.with(.{ .chunk_end = true });
+
+        // Gather block b of every lane into message vectors:
+        // m[w][lane] = word w of lane's block.
+        var m: [16]V = undefined;
+        for (0..16) |w| {
+            var tmp: [N]u32 = undefined;
+            for (0..N) |lane| {
+                tmp[lane] = load32(data[lane * chunk_length + b * block_length + w * 4 ..]);
+            }
+            m[w] = tmp;
+        }
+
+        compressVec(N, &cv, &m, ctr_lo, ctr_hi, f);
+    }
+
+    // Transpose word-major vectors back to per-lane CVs.
+    for (0..8) |w| {
+        const lanes: [N]u32 = cv[w];
+        for (0..N) |lane| out[lane][w] = lanes[lane];
+    }
+}
+
 test "single-chunk path matches stdlib for sizes ≤ stdlib chunk size" {
     // Single-chunk files hash identically to canonical BLAKE3 — the
     // compression function and ROOT-flag handling are the same regardless
@@ -254,4 +382,33 @@ test "multi-block single chunk: parent compose round-trip" {
     const root_b = parentHash(cv_left_again, cv_right_again, iv, .{ .root = true });
 
     try std.testing.expectEqualSlices(u32, &root_a, &root_b);
+}
+
+test "hashManyContiguous matches scalar chunkHash for full + partial batches" {
+    const N = simd_degree;
+    const counts = [_]usize{ 1, N, N + 1, 2 * N + 3 };
+    const max_count = 2 * N + 3;
+
+    const data = try std.testing.allocator.alloc(u8, max_count * chunk_length);
+    defer std.testing.allocator.free(data);
+    for (data, 0..) |*b, i| b.* = @truncate(i *% 31 +% 7);
+
+    const out = try std.testing.allocator.alloc([8]u32, max_count);
+    defer std.testing.allocator.free(out);
+
+    // Nonzero first counter to catch per-lane counter bugs.
+    const first_counter: u64 = 5;
+
+    for (counts) |k| {
+        hashManyContiguous(data[0 .. k * chunk_length], first_counter, iv, out[0..k]);
+        for (0..k) |i| {
+            const expected = chunkHash(
+                data[i * chunk_length ..][0..chunk_length],
+                first_counter + i,
+                iv,
+                .{},
+            );
+            try std.testing.expectEqualSlices(u32, &expected, &out[i]);
+        }
+    }
 }
