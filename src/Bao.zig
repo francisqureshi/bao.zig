@@ -11,7 +11,7 @@
 //!
 //!   [ 8 bytes  ] content_length (little-endian u64)
 //!   [ 32 × M   ] parent CVs in COMPUTE order (post-order DFS over internal
-//!                nodes). M = max(0, n_chunks - 1).
+//!                nodes), the root excluded. M = max(0, n_chunks - 2).
 //!
 //! Bao canonical spec uses pre-order; we use post-order so encoding streams
 //! without buffering the whole tree. Conversion is mechanical via an offset
@@ -25,6 +25,9 @@ const blake3 = @import("blake3_lo.zig");
 const Bao = @This();
 
 pub const Hash = [blake3.digest_length]u8;
+/// Re-exported so callers can size splits/buffers in chunks without reaching
+/// into blake3_lo.
+pub const chunk_length = blake3.chunk_length;
 // 1 MiB: must be >= chunk_length (256 KiB) so a chunk fills in one underlying
 // read instead of several. The encoder batches reads of up to simd_degree
 // chunks and hashes them via SIMD; multithreading is the remaining speedup.
@@ -82,28 +85,70 @@ pub fn encodeReader(
         return .{ .root = out, .content_length = 0, .n_chunks = 0, .n_internal = 0 };
     }
 
+    // The whole file is one root subtree: counter base 0, ROOT applied, root
+    // CV suppressed. `content_length` bytes == the entire reader.
+    const res = try encodeSubtreeCore(r, content_length, 0, true, out_writer);
+    return .{
+        .root = blake3.cvWordsToBytes(res.root),
+        .content_length = content_length,
+        .n_chunks = res.n_chunks,
+        .n_internal = res.n_internal,
+    };
+}
+
+const SubtreeResult = struct {
+    root: [8]u32,
+    n_chunks: u64,
+    n_internal: u64,
+};
+
+/// Encode a single BLAKE3 subtree spanning exactly `segment_len` bytes read
+/// from `r`, emitting its interior parent CVs (post-order) to `out`. Shared
+/// core of `encodeReader` (whole file, root subtree) and the parallel
+/// `encodeSubtree` (one segment of a larger file).
+///
+///   - `start_counter` seeds the BLAKE3 chunk counter — ESSENTIAL, since the
+///     counter is mixed into every chunk compression. A segment starting at
+///     chunk `k·C` must pass `start_counter = k·C`.
+///   - Merge/popcount decisions use the LOCAL chunk index, so the subtree's
+///     shape is independent of where it sits in the file.
+///   - `is_root`: the final combine gets the ROOT flag and is NOT emitted
+///     (matches the old `encodeReader`). Otherwise the final combine is this
+///     subtree's root — emitted as the last interior CV and returned so the
+///     combiner can splice it at the super level.
+fn encodeSubtreeCore(
+    r: *std.Io.Reader,
+    segment_len: u64,
+    start_counter: u64,
+    is_root: bool,
+    out: *std.Io.Writer,
+) !SubtreeResult {
+    std.debug.assert(segment_len > 0);
+
     // CV stack of completed subtrees, popcount(chunks_processed) invariant.
     var stack: [55][8]u32 = undefined;
     var stack_len: usize = 0;
     var n_internal: u64 = 0;
 
-    // Batch buffer: holds the carry (≤ 1 chunk, the possibly-last piece) at
-    // the front plus one batch read of up to BATCH_CHUNKS full chunks.
+    // Batch buffer: carry (≤ 1 chunk, the possibly-last piece) at the front
+    // plus one batch read of up to BATCH_CHUNKS full chunks.
     const BATCH_CHUNKS = blake3.simd_degree; // 1 ⇒ degenerates to one-chunk flow
     var buf: [(BATCH_CHUNKS + 1) * blake3.chunk_length]u8 = undefined;
     var carry_len: usize = 0; // bytes of the held-back piece at buf[0..]
-    var next_counter: u64 = 0; // counter of the OLDEST unhashed piece (the carry)
-    var any_data = false;
+    var counter = start_counter; // GLOBAL counter of the oldest unhashed piece
+    var local: u64 = 0; // LOCAL chunk index (drives popcount / tree shape)
+    var read_remaining = segment_len; // bytes not yet pulled from `r`
 
-    while (true) {
-        const n = try r.readSliceShort(buf[carry_len..][0 .. BATCH_CHUNKS * blake3.chunk_length]);
-        if (n == 0) break;
-        any_data = true;
+    while (read_remaining > 0) {
+        const cap: u64 = BATCH_CHUNKS * blake3.chunk_length;
+        const want: usize = @intCast(@min(cap, read_remaining));
+        const n = try r.readSliceShort(buf[carry_len..][0..want]);
+        if (n == 0) return error.UnexpectedEof; // segment_len promised more
+        read_remaining -= n;
         const total = carry_len + n;
         const full_pieces = total / blake3.chunk_length;
         const tail = total % blake3.chunk_length;
         // Everything before the FINAL piece of `total` is confirmed not-last.
-        // (tail == 0 ⇒ full_pieces ≥ 1 since n ≥ 1.)
         const hashable = if (tail == 0) full_pieces - 1 else full_pieces;
 
         if (hashable > 0) {
@@ -111,7 +156,7 @@ pub fn encodeReader(
             var cvs: [BATCH_CHUNKS][8]u32 = undefined;
             blake3.hashManyContiguous(
                 buf[0 .. hashable * blake3.chunk_length],
-                next_counter,
+                counter,
                 blake3.iv,
                 cvs[0..hashable],
             );
@@ -119,7 +164,7 @@ pub fn encodeReader(
                 stack[stack_len] = cv;
                 stack_len += 1;
 
-                const processed = next_counter + 1;
+                const processed = local + 1;
                 const target_len: usize = @popCount(processed);
                 while (stack_len > target_len) {
                     const left = stack[stack_len - 2];
@@ -127,10 +172,11 @@ pub fn encodeReader(
                     const parent = blake3.parentHash(left, right, blake3.iv, .{});
                     stack[stack_len - 2] = parent;
                     stack_len -= 1;
-                    try writeCv(out_writer, parent);
+                    try writeCv(out, parent);
                     n_internal += 1;
                 }
-                next_counter += 1;
+                counter += 1;
+                local += 1;
             }
         }
 
@@ -141,53 +187,208 @@ pub fn encodeReader(
         carry_len = new_carry_len;
     }
 
-    // content_length > 0 ⇒ at least one piece.
-    std.debug.assert(any_data and carry_len > 0);
+    std.debug.assert(carry_len > 0);
+    const total_chunks: u64 = local + 1;
 
-    const total_chunks: u64 = next_counter + 1;
-
-    // Single-chunk file: the carry IS the file. Apply ROOT directly.
+    // Single-chunk subtree: the carry IS the whole subtree.
     if (total_chunks == 1) {
-        const cv = blake3.chunkHash(buf[0..carry_len], 0, blake3.iv, .{ .root = true });
-        return .{
-            .root = blake3.cvWordsToBytes(cv),
-            .content_length = content_length,
-            .n_chunks = 1,
-            .n_internal = 0,
-        };
+        const cv = blake3.chunkHash(buf[0..carry_len], counter, blake3.iv, .{ .root = is_root });
+        return .{ .root = cv, .n_chunks = 1, .n_internal = 0 };
     }
 
     // Multi-chunk: hash last chunk WITHOUT ROOT, then climb the stack pairing
-    // it with each pending subtree. The final pair gets ROOT and isn't emitted.
-    var current = blake3.chunkHash(buf[0..carry_len], next_counter, blake3.iv, .{});
+    // it with each pending subtree. The topmost merge is this subtree's root:
+    // it gets ROOT (and is suppressed) only when `is_root`; otherwise it is a
+    // plain interior CV — emitted like the rest.
+    var current = blake3.chunkHash(buf[0..carry_len], counter, blake3.iv, .{});
     while (stack_len > 0) {
         const left = stack[stack_len - 1];
         stack_len -= 1;
-        const is_root_merge = (stack_len == 0);
+        const is_top = (stack_len == 0);
+        const root_here = is_top and is_root;
         const parent = blake3.parentHash(
             left,
             current,
             blake3.iv,
-            if (is_root_merge) .{ .root = true } else .{},
+            if (root_here) .{ .root = true } else .{},
         );
-        if (!is_root_merge) {
-            try writeCv(out_writer, parent);
+        if (!root_here) {
+            try writeCv(out, parent);
             n_internal += 1;
         }
         current = parent;
     }
 
-    return .{
-        .root = blake3.cvWordsToBytes(current),
-        .content_length = content_length,
-        .n_chunks = total_chunks,
-        .n_internal = n_internal,
-    };
+    return .{ .root = current, .n_chunks = total_chunks, .n_internal = n_internal };
+}
+
+/// Encode one subtree segment for parallel outboard construction. Reads
+/// exactly `segment_len` bytes from `r`; emits its interior CVs to `out`;
+/// returns the segment's root CV (words). No header. Pass `start_counter =
+/// segment.startCounter()` and `is_root = (n_segments == 1)`. See
+/// `encodeSubtreeCore` and `combineSubtrees`.
+pub fn encodeSubtree(
+    r: *std.Io.Reader,
+    start_counter: u64,
+    segment_len: u64,
+    is_root: bool,
+    out: *std.Io.Writer,
+) ![8]u32 {
+    const res = try encodeSubtreeCore(r, segment_len, start_counter, is_root, out);
+    return res.root;
 }
 
 fn writeCv(out: *std.Io.Writer, cv_words: [8]u32) !void {
     const bytes = blake3.cvWordsToBytes(cv_words);
     try out.writeAll(&bytes);
+}
+
+// -----------------------------------------------------------------------------
+// Parallel subtree split + combine (issue #142).
+//
+// BLAKE3's tree is left-full: for a power-of-two chunk count C = 2^m, the range
+// [k·C, (k+1)·C) is always a perfect C-chunk subtree, and the global split point
+// L = largest_pow2 < N is a multiple of C (since N > C ⇒ L ≥ C). So a file of N
+// chunks splits into P = ceil(N/C) subtree-aligned segments (the first P-1 full,
+// the last the 1..C-chunk remainder), each encodable independently. The combiner
+// splices the per-segment interior-CV runs and merges the segment roots at the
+// "super level" — literally `encodeReader` over the segment roots, driven by the
+// SEGMENT index (popcount((k+1)·C) == popcount(k+1)), with the last segment as
+// the carry so the global root is suppressed. Emitted CV count is unchanged:
+// (N − P) segment-interior CVs + (P − 2) super CVs = N − 2.
+// -----------------------------------------------------------------------------
+
+/// Minimum chunks per segment: below this, subtree parallelism isn't worth the
+/// per-segment overhead, so tiny files fall back to a single segment (P=1).
+pub const MIN_SEG_CHUNKS: u64 = 256;
+
+/// Largest power of two ≤ x (x ≥ 1).
+fn floorPow2(x: u64) u64 {
+    std.debug.assert(x >= 1);
+    var p: u64 = 1;
+    while (p <= x >> 1) p <<= 1;
+    return p;
+}
+
+pub const Segment = struct {
+    start_chunk: u64,
+    chunk_count: u64,
+
+    /// BLAKE3 chunk counter for this segment's first chunk.
+    pub fn startCounter(self: Segment) u64 {
+        return self.start_chunk;
+    }
+    /// Byte offset of the segment's first chunk.
+    pub fn byteStart(self: Segment) u64 {
+        return self.start_chunk * blake3.chunk_length;
+    }
+    /// Byte length to read for this segment, given the whole content length
+    /// (the last chunk of the last segment may be partial).
+    pub fn byteLen(self: Segment, content_length: u64) u64 {
+        const start = self.byteStart();
+        const end = @min(start + self.chunk_count * blake3.chunk_length, content_length);
+        return end - start;
+    }
+};
+
+pub const Split = struct {
+    /// Chunks per full segment — a power of two. 0 iff the file is empty.
+    seg_chunks: u64,
+    total_chunks: u64,
+
+    /// Number of segments P = ceil(N / C).
+    pub fn count(self: Split) u64 {
+        if (self.total_chunks == 0) return 0;
+        return (self.total_chunks + self.seg_chunks - 1) / self.seg_chunks;
+    }
+    pub fn segment(self: Split, k: u64) Segment {
+        const start = k * self.seg_chunks;
+        std.debug.assert(start < self.total_chunks);
+        return .{ .start_chunk = start, .chunk_count = @min(self.seg_chunks, self.total_chunks - start) };
+    }
+};
+
+/// Split `n_chunks` into ~`target` subtree-aligned segments. Segment size C is
+/// the largest power of two ≤ n_chunks/target, clamped up to MIN_SEG_CHUNKS.
+/// Every full segment is a perfect C-chunk subtree; the last is the remainder
+/// (1..C chunks). When n_chunks is large enough that the ratio (not the clamp)
+/// sets C, the segment count P lands in [target, 2·target).
+pub fn subtreeSplit(n_chunks: u64, target: u64) Split {
+    std.debug.assert(target >= 1);
+    if (n_chunks == 0) return .{ .seg_chunks = 0, .total_chunks = 0 };
+    const ratio = n_chunks / target;
+    var c: u64 = if (ratio >= 1) floorPow2(ratio) else 1;
+    if (c < MIN_SEG_CHUNKS) c = MIN_SEG_CHUNKS;
+    return .{ .seg_chunks = c, .total_chunks = n_chunks };
+}
+
+/// Combine per-segment encode results into one outboard byte-identical to
+/// `encodeReader`. `seg_roots[k]` / `seg_blobs[k]` are the root CV and interior
+/// CV bytes returned/emitted by `encodeSubtree` on `split.segment(k)`. Writes
+/// the 8-byte header then the interleaved post-order CV stream; returns the
+/// file root.
+pub fn combineSubtrees(
+    split: Split,
+    content_length: u64,
+    seg_roots: []const [8]u32,
+    seg_blobs: []const []const u8,
+    out: *std.Io.Writer,
+) !Hash {
+    var hdr: [8]u8 = undefined;
+    std.mem.writeInt(u64, &hdr, content_length, .little);
+    try out.writeAll(&hdr);
+
+    const p = split.count();
+    if (p == 0) {
+        var o: Hash = undefined;
+        std.crypto.hash.Blake3.hash(&.{}, &o, .{});
+        return o;
+    }
+    std.debug.assert(seg_roots.len == p and seg_blobs.len == p);
+
+    // Single segment: it IS the root subtree (encoded with is_root=true), so
+    // its blob is already the whole CV stream and its root is the file root.
+    if (p == 1) {
+        try out.writeAll(seg_blobs[0]);
+        return blake3.cvWordsToBytes(seg_roots[0]);
+    }
+
+    // Super level: run encodeReader's stack algorithm over the segment roots,
+    // driven by segment index. Splice each segment's interior CVs BEFORE its
+    // push/merge so the post-order interleaving matches the sequential encoder.
+    var stack: [55][8]u32 = undefined;
+    var stack_len: usize = 0;
+
+    var k: u64 = 0;
+    while (k + 1 < p) : (k += 1) {
+        try out.writeAll(seg_blobs[@intCast(k)]);
+        stack[stack_len] = seg_roots[@intCast(k)];
+        stack_len += 1;
+
+        const processed = k + 1;
+        const target_len: usize = @popCount(processed);
+        while (stack_len > target_len) {
+            const left = stack[stack_len - 2];
+            const right = stack[stack_len - 1];
+            const parent = blake3.parentHash(left, right, blake3.iv, .{});
+            stack[stack_len - 2] = parent;
+            stack_len -= 1;
+            try writeCv(out, parent);
+        }
+    }
+
+    // Last segment = carry: splice its interiors, then climb, ROOT on the top.
+    try out.writeAll(seg_blobs[@intCast(p - 1)]);
+    var current = seg_roots[@intCast(p - 1)];
+    while (stack_len > 0) {
+        const left = stack[stack_len - 1];
+        stack_len -= 1;
+        const is_top = (stack_len == 0);
+        const parent = blake3.parentHash(left, current, blake3.iv, if (is_top) .{ .root = true } else .{});
+        if (!is_top) try writeCv(out, parent);
+        current = parent;
+    }
+    return blake3.cvWordsToBytes(current);
 }
 
 // -----------------------------------------------------------------------------
@@ -1291,6 +1492,163 @@ test "buildTree round-trips with encodeReader root" {
         const enc = try encodeReader(&in, sz, &out_w);
 
         try testing.expectEqualSlices(u8, &enc.root, &tree.root);
+    }
+}
+
+// ---- parallel subtree split/combine (issue #142) ----
+
+/// In-memory oracle: encode `content` via the parallel path (subtreeSplit →
+/// encodeSubtree×P → combineSubtrees) with an explicit segment size `C`.
+/// Returns the file root + the combined outboard bytes (arena-owned).
+fn oracleParallel(
+    arena: std.mem.Allocator,
+    content: []const u8,
+    seg_chunks: u64,
+) !struct { root: Hash, outboard: []u8 } {
+    const n_chunks = chunksOf(content.len);
+    const split: Split = .{
+        .seg_chunks = if (n_chunks == 0) 0 else seg_chunks,
+        .total_chunks = n_chunks,
+    };
+    const p = split.count();
+
+    const roots = try arena.alloc([8]u32, @max(p, 1));
+    const blobs = try arena.alloc([]const u8, @max(p, 1));
+
+    var k: u64 = 0;
+    while (k < p) : (k += 1) {
+        const seg = split.segment(k);
+        const blen = seg.byteLen(content.len);
+        const bstart: usize = @intCast(seg.byteStart());
+        var sin = std.Io.Reader.fixed(content[bstart..][0..@intCast(blen)]);
+        const cap = 8 + 32 * (@as(usize, @intCast(seg.chunk_count)) + 1);
+        const bbuf = try arena.alloc(u8, cap);
+        var bw = std.Io.Writer.fixed(bbuf);
+        roots[@intCast(k)] = try encodeSubtree(&sin, seg.startCounter(), blen, p == 1, &bw);
+        blobs[@intCast(k)] = bbuf[0..bw.end];
+    }
+
+    const out_cap = 8 + 32 * (content.len / blake3.chunk_length + 2);
+    const out_buf = try arena.alloc(u8, out_cap);
+    var out_w = std.Io.Writer.fixed(out_buf);
+    const root = try combineSubtrees(split, content.len, roots[0..p], blobs[0..p], &out_w);
+    return .{ .root = root, .outboard = out_buf[0..out_w.end] };
+}
+
+test "parallel subtree encode is byte-identical to encodeReader" {
+    const chunk = blake3.chunk_length;
+    const sizes = [_]usize{
+        0,          1,          100,         chunk - 1,      chunk,      chunk + 1,
+        2 * chunk,  3 * chunk,  4 * chunk,   5 * chunk,      7 * chunk,  8 * chunk,
+        8 * chunk + 1, 8 * chunk - 1, 16 * chunk, 17 * chunk, 13 * chunk + 12_345,
+    };
+    // Segment sizes: C=1 reduces the combiner to encodeReader itself; larger
+    // C exercises real subtree splices. C > n_chunks ⇒ P=1 (degenerate).
+    const seg_cs = [_]u64{ 1, 2, 4, 8 };
+
+    for (sizes) |sz| {
+        const content = try testing.allocator.alloc(u8, sz);
+        defer testing.allocator.free(content);
+        for (content, 0..) |*b, i| b.* = @truncate(i +% (sz *% 7));
+
+        const ref_buf = try testing.allocator.alloc(u8, 8 + 32 * (sz / chunk + 2));
+        defer testing.allocator.free(ref_buf);
+        var ref_w = std.Io.Writer.fixed(ref_buf);
+        var ref_in = std.Io.Reader.fixed(content);
+        const ref = try encodeReader(&ref_in, sz, &ref_w);
+        const ref_ob = ref_buf[0..ref_w.end];
+
+        for (seg_cs) |c| {
+            var arena = std.heap.ArenaAllocator.init(testing.allocator);
+            defer arena.deinit();
+            const got = try oracleParallel(arena.allocator(), content, c);
+            testing.expectEqualSlices(u8, &ref.root, &got.root) catch |e| {
+                std.debug.print("root mismatch sz={} C={}\n", .{ sz, c });
+                return e;
+            };
+            testing.expectEqualSlices(u8, ref_ob, got.outboard) catch |e| {
+                std.debug.print("outboard mismatch sz={} C={}\n", .{ sz, c });
+                return e;
+            };
+        }
+    }
+}
+
+test "subtreeSplit: aligned segments, P in [target, 2·target)" {
+    const target: u64 = 8;
+    // n_chunks large enough that C is ratio-driven (ratio >= MIN_SEG_CHUNKS)
+    // and P avoids the ceil boundary at exactly 2·target.
+    const ns = [_]u64{ target * 4096, target * 4097, target * 6000, target * 7000, 100_000 };
+    for (ns) |n| {
+        const split = subtreeSplit(n, target);
+        const p = split.count();
+        try testing.expect(std.math.isPowerOfTwo(split.seg_chunks));
+        try testing.expect(p >= target and p < 2 * target);
+
+        var covered: u64 = 0;
+        var k: u64 = 0;
+        while (k < p) : (k += 1) {
+            const seg = split.segment(k);
+            try testing.expectEqual(covered, seg.start_chunk);
+            if (k + 1 < p) {
+                try testing.expectEqual(split.seg_chunks, seg.chunk_count);
+            } else {
+                try testing.expect(seg.chunk_count >= 1 and seg.chunk_count <= split.seg_chunks);
+            }
+            covered += seg.chunk_count;
+        }
+        try testing.expectEqual(n, covered);
+    }
+}
+
+test "parallel-produced outboard reads back and verifies" {
+    const sz: usize = 17 * blake3.chunk_length + 5000; // ragged, multi-segment at C=4
+    const content = try testing.allocator.alloc(u8, sz);
+    defer testing.allocator.free(content);
+    for (content, 0..) |*b, i| b.* = @truncate(i +% 23);
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const got = try oracleParallel(arena.allocator(), content, 4);
+
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    {
+        var f = try tmp.dir.createFile(io, "content.bin", .{});
+        defer f.close(io);
+        try f.writePositionalAll(io, content, 0);
+    }
+    {
+        var f = try tmp.dir.createFile(io, "content.bao", .{});
+        defer f.close(io);
+        try f.writePositionalAll(io, got.outboard, 0);
+    }
+
+    var ob = try OutboardReader.open(io, tmp.dir, "content.bao");
+    defer ob.close();
+    var cf = try tmp.dir.openFile(io, "content.bin", .{});
+    defer cf.close(io);
+
+    var tree = try buildTree(testing.allocator, content);
+    defer tree.deinit();
+    try testing.expectEqualSlices(u8, &tree.root, &got.root);
+
+    var obc: u64 = 0;
+    var tc: usize = 0;
+    try walkCheckCvs(tree, &ob, &obc, &tc, 0, ob.n_chunks, true);
+    try testing.expectEqual(ob.n_internal, obc);
+
+    const out_buf = try testing.allocator.alloc(u8, sz);
+    defer testing.allocator.free(out_buf);
+    const ranges = [_]struct { off: u64, len: u64 }{
+        .{ .off = 0, .len = 100 },
+        .{ .off = blake3.chunk_length * 3 - 10, .len = 5000 },
+        .{ .off = sz - 64, .len = 64 },
+    };
+    for (ranges) |r| {
+        try verifiedSeek(io, testing.allocator, &ob, cf, got.root, r.off, r.len, out_buf[0..r.len]);
+        try testing.expectEqualSlices(u8, content[r.off..][0..r.len], out_buf[0..r.len]);
     }
 }
 
