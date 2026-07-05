@@ -306,6 +306,21 @@ pub const Split = struct {
         std.debug.assert(start < self.total_chunks);
         return .{ .start_chunk = start, .chunk_count = @min(self.seg_chunks, self.total_chunks - start) };
     }
+
+    /// Byte offset of segment k's interior-CV run in the final outboard —
+    /// lets each lane pwrite its run directly, no in-memory splice.
+    ///
+    /// What precedes blob k in the post-order stream: the 8-byte header, the
+    /// interior runs of segments 0..k (all full, C chunks ⇒ C−1 CVs each ⇒
+    /// k·(C−1) total), and the super-level parent CVs already emitted. The
+    /// super level runs encodeReader's stack algorithm over the segment
+    /// roots: after k pushes the stack holds popCount(k) entries, so exactly
+    /// k − popCount(k) merges (= super CVs) have happened. Total:
+    ///   8 + 32·(k·(C−1) + k − popCount(k)) = 8 + 32·(k·C − popCount(k)).
+    pub fn segmentOutboardOffset(self: Split, k: u64) u64 {
+        std.debug.assert(k < self.count());
+        return 8 + 32 * (k * self.seg_chunks - @popCount(k));
+    }
 };
 
 /// Split `n_chunks` into ~`target` subtree-aligned segments. Segment size C is
@@ -388,6 +403,88 @@ pub fn combineSubtrees(
         if (!is_top) try writeCv(out, parent);
         current = parent;
     }
+    return blake3.cvWordsToBytes(current);
+}
+
+/// Positional variant of `combineSubtrees` for direct-to-file assembly: the
+/// per-segment interior-CV runs are already in the outboard file (each lane
+/// pwrites its run at `split.segmentOutboardOffset(k)`), so all that remains
+/// is the 8-byte header and the P−2 super-level parent CVs. Same merge order
+/// as the streaming version, but instead of splicing blobs a running offset
+/// advances past each segment's interior run and each super CV is pwritten
+/// where the stream would have put it — no buffer proportional to file size.
+/// Returns the file root.
+pub fn combineSubtreesPositional(
+    split: Split,
+    content_length: u64,
+    seg_roots: []const [8]u32,
+    io: std.Io,
+    out: std.Io.File,
+) !Hash {
+    var hdr: [8]u8 = undefined;
+    std.mem.writeInt(u64, &hdr, content_length, .little);
+    try out.writePositionalAll(io, &hdr, 0);
+
+    const p = split.count();
+    if (p == 0) {
+        var o: Hash = undefined;
+        std.crypto.hash.Blake3.hash(&.{}, &o, .{});
+        return o;
+    }
+    std.debug.assert(seg_roots.len == p);
+
+    // Single segment: it IS the root subtree (encoded with is_root=true), so
+    // its on-disk run is already the whole CV stream and its root is the
+    // file root. Nothing left but the header.
+    if (p == 1) return blake3.cvWordsToBytes(seg_roots[0]);
+
+    // Super level: encodeReader's stack algorithm over the segment roots.
+    // `off` tracks where the next CV would land in the sequential stream;
+    // each segment's interior run (chunk_count − 1 CVs, already on disk)
+    // just advances it.
+    var stack: [55][8]u32 = undefined;
+    var stack_len: usize = 0;
+    var off: u64 = 8;
+
+    var k: u64 = 0;
+    while (k + 1 < p) : (k += 1) {
+        std.debug.assert(off == split.segmentOutboardOffset(k));
+        off += 32 * (split.segment(k).chunk_count - 1);
+        stack[stack_len] = seg_roots[@intCast(k)];
+        stack_len += 1;
+
+        const processed = k + 1;
+        const target_len: usize = @popCount(processed);
+        while (stack_len > target_len) {
+            const left = stack[stack_len - 2];
+            const right = stack[stack_len - 1];
+            const parent = blake3.parentHash(left, right, blake3.iv, .{});
+            stack[stack_len - 2] = parent;
+            stack_len -= 1;
+            const bytes = blake3.cvWordsToBytes(parent);
+            try out.writePositionalAll(io, &bytes, off);
+            off += 32;
+        }
+    }
+
+    // Last segment = carry: skip its interior run, then climb, ROOT on top.
+    std.debug.assert(off == split.segmentOutboardOffset(p - 1));
+    off += 32 * (split.segment(p - 1).chunk_count - 1);
+    var current = seg_roots[@intCast(p - 1)];
+    while (stack_len > 0) {
+        const left = stack[stack_len - 1];
+        stack_len -= 1;
+        const is_top = (stack_len == 0);
+        const parent = blake3.parentHash(left, current, blake3.iv, if (is_top) .{ .root = true } else .{});
+        if (!is_top) {
+            const bytes = blake3.cvWordsToBytes(parent);
+            try out.writePositionalAll(io, &bytes, off);
+            off += 32;
+        }
+        current = parent;
+    }
+    // Stream complete: N−2 CVs total, exactly as the sequential encoder.
+    std.debug.assert(off == 8 + 32 * (split.total_chunks - 2));
     return blake3.cvWordsToBytes(current);
 }
 
@@ -1568,6 +1665,82 @@ test "parallel subtree encode is byte-identical to encodeReader" {
             };
             testing.expectEqualSlices(u8, ref_ob, got.outboard) catch |e| {
                 std.debug.print("outboard mismatch sz={} C={}\n", .{ sz, c });
+                return e;
+            };
+        }
+    }
+}
+
+test "positional parallel assembly is byte-identical to encodeReader" {
+    const chunk = blake3.chunk_length;
+    const sizes = [_]usize{
+        0,          1,          100,         chunk - 1,      chunk,      chunk + 1,
+        2 * chunk,  3 * chunk,  4 * chunk,   5 * chunk,      7 * chunk,  8 * chunk,
+        8 * chunk + 1, 8 * chunk - 1, 16 * chunk, 17 * chunk, 13 * chunk + 12_345,
+    };
+    const seg_cs = [_]u64{ 1, 2, 4, 8 };
+
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    for (sizes) |sz| {
+        const content = try testing.allocator.alloc(u8, sz);
+        defer testing.allocator.free(content);
+        for (content, 0..) |*b, i| b.* = @truncate(i +% (sz *% 11));
+
+        const ref_buf = try testing.allocator.alloc(u8, 8 + 32 * (sz / chunk + 2));
+        defer testing.allocator.free(ref_buf);
+        var ref_w = std.Io.Writer.fixed(ref_buf);
+        var ref_in = std.Io.Reader.fixed(content);
+        const ref = try encodeReader(&ref_in, sz, &ref_w);
+        const ref_ob = ref_buf[0..ref_w.end];
+
+        for (seg_cs) |c| {
+            var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+            defer arena_state.deinit();
+            const arena = arena_state.allocator();
+
+            const n_chunks = chunksOf(sz);
+            const split: Split = .{
+                .seg_chunks = if (n_chunks == 0) 0 else c,
+                .total_chunks = n_chunks,
+            };
+            const p = split.count();
+
+            var f = try tmp.dir.createFile(io, "pos.bao", .{ .read = true });
+            defer f.close(io);
+
+            // Each segment: collect its interior-CV run, then positional-write
+            // it at segmentOutboardOffset(k). The offsets (and the final bytes)
+            // are what's under test — not the streaming mechanics.
+            const roots = try arena.alloc([8]u32, @max(p, 1));
+            var k: u64 = 0;
+            while (k < p) : (k += 1) {
+                const seg = split.segment(k);
+                const blen = seg.byteLen(sz);
+                const bstart: usize = @intCast(seg.byteStart());
+                var sin = std.Io.Reader.fixed(content[bstart..][0..@intCast(blen)]);
+                const cap = 32 * (@as(usize, @intCast(seg.chunk_count)) + 1);
+                const bbuf = try arena.alloc(u8, cap);
+                var bw = std.Io.Writer.fixed(bbuf);
+                roots[@intCast(k)] = try encodeSubtree(&sin, seg.startCounter(), blen, p == 1, &bw);
+                try f.writePositionalAll(io, bbuf[0..bw.end], split.segmentOutboardOffset(k));
+            }
+
+            const root = try combineSubtreesPositional(split, sz, roots[0..p], io, f);
+            testing.expectEqualSlices(u8, &ref.root, &root) catch |e| {
+                std.debug.print("positional root mismatch sz={} C={}\n", .{ sz, c });
+                return e;
+            };
+
+            const stat = try f.stat(io);
+            try testing.expectEqual(@as(u64, ref_ob.len), stat.size);
+            const got_ob = try arena.alloc(u8, ref_ob.len);
+            const got_n = try f.readPositionalAll(io, got_ob, 0);
+            try testing.expectEqual(ref_ob.len, got_n);
+            testing.expectEqualSlices(u8, ref_ob, got_ob) catch |e| {
+                std.debug.print("positional outboard mismatch sz={} C={}\n", .{ sz, c });
                 return e;
             };
         }
