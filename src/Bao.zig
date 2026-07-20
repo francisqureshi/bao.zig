@@ -533,7 +533,13 @@ pub const Tree = struct {
 };
 
 fn chunksOf(content_len: u64) u64 {
-    return (content_len + blake3.chunk_length - 1) / blake3.chunk_length;
+    if (content_len == 0) return 0;
+    return (content_len - 1) / blake3.chunk_length + 1;
+}
+
+fn outboardSize(n_internal: u64) !u64 {
+    const cv_bytes = try std.math.mul(u64, 32, n_internal);
+    return std.math.add(u64, 8, cv_bytes);
 }
 
 /// Left subtree size in chunks: largest power of 2 < chunk_count.
@@ -959,7 +965,7 @@ pub const OutboardReader = struct {
     pub const OpenError = std.Io.File.OpenError ||
         std.Io.File.ReadPositionalError ||
         std.Io.File.StatError ||
-        error{ OutboardTooShort, OutboardTruncated };
+        error{ OutboardTooShort, OutboardTruncated, OutboardOversized, Overflow };
 
     pub fn open(io: std.Io, dir: std.Io.Dir, path: []const u8) OpenError!OutboardReader {
         var file = try dir.openFile(io, path, .{});
@@ -972,10 +978,11 @@ pub const OutboardReader = struct {
         const n_chunks = chunksOf(content_length);
         const n_internal: u64 = if (n_chunks <= 1) 0 else n_chunks - 2;
 
-        // Sanity-check file length covers all advertised CVs.
-        const expected_size: u64 = 8 + 32 * n_internal;
+        // An outboard has one exact structural layout for its content length.
+        const expected_size = try outboardSize(n_internal);
         const stat = try file.stat(io);
         if (stat.size < expected_size) return error.OutboardTruncated;
+        if (stat.size > expected_size) return error.OutboardOversized;
 
         return .{
             .io = io,
@@ -1997,6 +2004,38 @@ test "OutboardReader.cvAt returns same CVs as in-memory Tree across sizes" {
         try testing.expectEqual(ob.n_internal, ob_cursor);
         try testing.expectEqual(tree.cvs.len, tree_cursor);
     }
+}
+
+test "OutboardReader rejects maximum, truncated, and oversized layouts" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+
+    {
+        var file = try tmp.dir.createFile(io, "content.bao", .{});
+        defer file.close(io);
+        var header: [8]u8 = undefined;
+        std.mem.writeInt(u64, &header, std.math.maxInt(u64), .little);
+        try file.writePositionalAll(io, &header, 0);
+    }
+    try std.testing.expectError(error.OutboardTruncated, OutboardReader.open(io, tmp.dir, "content.bao"));
+
+    {
+        var file = try tmp.dir.createFile(io, "content.bao", .{ .truncate = true });
+        defer file.close(io);
+        var header: [8]u8 = undefined;
+        std.mem.writeInt(u64, &header, 3 * blake3.chunk_length, .little);
+        try file.writePositionalAll(io, &header, 0);
+    }
+    try std.testing.expectError(error.OutboardTruncated, OutboardReader.open(io, tmp.dir, "content.bao"));
+
+    {
+        var file = try tmp.dir.createFile(io, "content.bao", .{ .truncate = true });
+        defer file.close(io);
+        var bytes = [_]u8{0} ** 9;
+        try file.writePositionalAll(io, &bytes, 0);
+    }
+    try std.testing.expectError(error.OutboardOversized, OutboardReader.open(io, tmp.dir, "content.bao"));
 }
 
 test "extractSliceFromOutboard round-trips with verifySlice" {
