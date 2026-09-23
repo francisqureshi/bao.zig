@@ -1,0 +1,1190 @@
+[
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 1,
+    "cpus": [
+      0
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 2.748924928950146,
+    "gib_per_second": 3.637785773880389,
+    "cpu_seconds": 2.73656,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 2,
+    "cpus": [
+      0,
+      1
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 1.640007195994258,
+    "gib_per_second": 6.097534220840707,
+    "cpu_seconds": 2.7271829999999992,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 4,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 1.1054601608775556,
+    "gib_per_second": 9.046006680206029,
+    "cpu_seconds": 2.77162,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 8,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 0.6008893649559468,
+    "gib_per_second": 16.641998649340604,
+    "cpu_seconds": 3.1170969999999993,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 16,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 0.9850320608820766,
+    "gib_per_second": 10.151953826807626,
+    "cpu_seconds": 13.093767000000001,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 1,
+    "cpus": [
+      0
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 5.2749199899844825,
+    "gib_per_second": 1.5166106813353835,
+    "cpu_seconds": 3.0150119999999987,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 2,
+    "cpus": [
+      0,
+      1
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 1.2877131619025022,
+    "gib_per_second": 6.212563664551339,
+    "cpu_seconds": 2.3167790000000004,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 4,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 0.6561553589999676,
+    "gib_per_second": 12.192234491832284,
+    "cpu_seconds": 2.3766969999999965,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 8,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 0.34478775691241026,
+    "gib_per_second": 23.202680024489144,
+    "cpu_seconds": 2.635541,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 16,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 0.8225360959768295,
+    "gib_per_second": 9.726016936070556,
+    "cpu_seconds": 11.501856000000004,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 1,
+    "cpus": [
+      0
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 7.857242047088221,
+    "gib_per_second": 1.2727112057984589,
+    "cpu_seconds": 3.7465459999999986,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 2,
+    "cpus": [
+      0,
+      1
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 8.076160272117704,
+    "gib_per_second": 1.2382121779484985,
+    "cpu_seconds": 4.488600000000002,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 4,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 5.5143952909857035,
+    "gib_per_second": 1.8134354670487343,
+    "cpu_seconds": 4.602492999999999,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 8,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 4.283137910999358,
+    "gib_per_second": 2.3347368699754902,
+    "cpu_seconds": 5.171621999999999,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 16,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 3.134627738967538,
+    "gib_per_second": 3.190171475766284,
+    "cpu_seconds": 7.700794999999996,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 1,
+    "cpus": [
+      0
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 6.563611985882744,
+    "gib_per_second": 1.218841091948563,
+    "cpu_seconds": 3.279918999999989,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 2,
+    "cpus": [
+      0,
+      1
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 5.180571525124833,
+    "gib_per_second": 1.5442311646893494,
+    "cpu_seconds": 3.128774,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 4,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 2.94289382500574,
+    "gib_per_second": 2.7184127174497696,
+    "cpu_seconds": 3.183565999999999,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 8,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 2.0451897571329027,
+    "gib_per_second": 3.911617478084277,
+    "cpu_seconds": 3.6061029999999974,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 1,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 16,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 1.7750244829803705,
+    "gib_per_second": 4.506980087715483,
+    "cpu_seconds": 8.434894,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 16,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 1.0965777409728616,
+    "gib_per_second": 9.119280490891782,
+    "cpu_seconds": 12.653723,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 8,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 0.6201081050094217,
+    "gib_per_second": 16.12622044320492,
+    "cpu_seconds": 3.2199739999999935,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 4,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 1.1389345529023558,
+    "gib_per_second": 8.78013576330345,
+    "cpu_seconds": 2.8538489999999896,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 2,
+    "cpus": [
+      0,
+      1
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 1.6941776489838958,
+    "gib_per_second": 5.902568721761631,
+    "cpu_seconds": 2.8091640000000027,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "single-file",
+    "workers": 1,
+    "cpus": [
+      0
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 2.818845988949761,
+    "gib_per_second": 3.547551033011838,
+    "cpu_seconds": 2.8026359999999997,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 16,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 0.8659421480260789,
+    "gib_per_second": 9.238492453838925,
+    "cpu_seconds": 12.172841000000012,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 8,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 0.40545125189237297,
+    "gib_per_second": 19.73110198244893,
+    "cpu_seconds": 2.6999520000000032,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 4,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 0.6391490530222654,
+    "gib_per_second": 12.516642185686399,
+    "cpu_seconds": 2.324284000000013,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 2,
+    "cpus": [
+      0,
+      1
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 1.1333259781822562,
+    "gib_per_second": 7.0588693403386165,
+    "cpu_seconds": 2.2411149999999935,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "warm",
+    "workload": "across-files",
+    "workers": 1,
+    "cpus": [
+      0
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 2.4233834829647094,
+    "gib_per_second": 3.301169648236189,
+    "cpu_seconds": 2.386144999999992,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 16,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 3.085823134984821,
+    "gib_per_second": 3.2406264269093277,
+    "cpu_seconds": 7.785930000000008,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 8,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 4.25957082095556,
+    "gib_per_second": 2.347654357759141,
+    "cpu_seconds": 5.196550000000002,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 4,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 5.444724960951135,
+    "gib_per_second": 1.836640063863411,
+    "cpu_seconds": 4.594610999999986,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 2,
+    "cpus": [
+      0,
+      1
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 8.057386430213228,
+    "gib_per_second": 1.241097232534665,
+    "cpu_seconds": 4.407742999999996,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "single-file",
+    "workers": 1,
+    "cpus": [
+      0
+    ],
+    "input_bytes": 10737418240,
+    "seconds": 7.976801186101511,
+    "gib_per_second": 1.2536353566669853,
+    "cpu_seconds": 3.8057270000000187,
+    "output_bytes": 1310664,
+    "roots": {
+      "large.bin": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 16,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 1.7744551920332015,
+    "gib_per_second": 4.50842604305689,
+    "cpu_seconds": 8.294706000000005,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 8,
+    "cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 2.034752943087369,
+    "gib_per_second": 3.931681252595437,
+    "cpu_seconds": 3.652374999999978,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 4,
+    "cpus": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 2.9344064539764076,
+    "gib_per_second": 2.7262753560125312,
+    "cpu_seconds": 3.1694499999999977,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 2,
+    "cpus": [
+      0,
+      1
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 4.821839394979179,
+    "gib_per_second": 1.6591178893950997,
+    "cpu_seconds": 3.206662999999992,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  },
+  {
+    "repeat": 2,
+    "cache": "evict",
+    "workload": "across-files",
+    "workers": 1,
+    "cpus": [
+      0
+    ],
+    "input_bytes": 8589934592,
+    "seconds": 6.093075138982385,
+    "gib_per_second": 1.3129659191001037,
+    "cpu_seconds": 3.0456220000000087,
+    "output_bytes": 1047680,
+    "roots": {
+      "shard-00.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-01.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-02.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-03.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-04.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-05.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-06.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-07.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-08.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-09.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-10.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-11.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-12.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-13.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-14.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce",
+      "shard-15.bin": "0b7472468727181c47e2314055c33a1d17ce790ea13f499299e43932c24313ce"
+    }
+  }
+]

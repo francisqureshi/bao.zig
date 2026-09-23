@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-23",
+  "cpu": "AMD Ryzen 7 5800X",
+  "physical_cores": 8,
+  "logical_cpus": 16,
+  "physical_cpu_set": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "smt_siblings": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "storage": "Sabrent Rocket Q4 2TB NVMe, ext4",
+  "governor": "powersave",
+  "boost": false,
+  "ram_gib": 32,
+  "zig": "0.16.0",
+  "original_revision": "a3da1e13836dd9d599018cf3d857cc59e3942066",
+  "original_outboard_sha256_large": "e0f13e00ef4fe7690741f1f2eae9eaeebbeb9de2d218685dbbf657ca912ae211",
+  "original_outboard_sha256_shard": "525480e36fee39d5c7f3fc16ab1d46f8fbd8ec9a45161fe5b1e07c82b9701bac",
+  "large_input_bytes": 10737418240,
+  "shard_count": 16,
+  "shard_bytes": 536870912,
+  "data_pattern": "8MiB random block repeated; identical content across equal-length files; dense allocation",
+  "native_kernel": "BLAKE3 1.8.7 AVX2 assembly with custom 256KiB chunks",
+  "saturation_limit_seconds": 600,
+  "scaling_elapsed_seconds": 149.6,
+  "additional_io_concurrency_elapsed_seconds": 9.2,
+  "sustained_elapsed_seconds": 60.44
+}

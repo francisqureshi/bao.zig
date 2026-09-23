@@ -1,52 +1,24 @@
-//! Minimal portable BLAKE3 chunk-level primitives.
+//! BLAKE3-derived chunk primitives with a non-standard 256 KiB chunk size.
 //!
-//! Vendored from stdlib `std.crypto.hash.blake3` — the parts that are `fn`
-//! (private) there but needed for Bao's tree walking. Single-threaded, no
-//! SIMD. Correctness over speed for now; can swap to SIMD/parallel later by
-//! widening the vendored area.
+//! Scalar routines are adapted from Zig's MIT-licensed stdlib and retained
+//! as the reference. Full batches use Zig vectors by default, or upstream's
+//! AVX2 assembly with `-Dnative-kernel=true` (licenses in vendor/blake3).
+//! The native routine receives 4096 blocks per chunk, preserving this
+//! project's hashes rather than switching to standard BLAKE3 chunking.
 //!
-//! NON-STANDARD CHUNK SIZE: canonical BLAKE3 uses 1 KiB chunks. We use 256
-//! KiB to shrink Bao outboards (the tree is per-chunk, so fewer chunks =
-//! smaller outboard). The compression function, IV, and tree composition
-//! rules are unchanged — only the leaf granularity differs. Consequence:
-//! root hashes do NOT match canonical BLAKE3 / `b3sum` for any file larger
-//! than `chunk_length` bytes. Files of size ≤ chunk_length still match
-//! (single-chunk path is identical). Internal-use hash only — never
-//! interchange with external BLAKE3 ecosystems. See oconnor663/bao#34 for
-//! the spec discussion that motivated this.
+//! Canonical BLAKE3 uses 1 KiB chunks: hashes agree only for inputs up to
+//! 1 KiB. Larger files use a custom construction, not a standard BLAKE3 hash.
+//! Increasing wire-level chunk groups while keeping canonical hashing would
+//! be a different design; see oconnor663/bao#34.
 //!
-//! ── PERFORMANCE / FUTURE OPTIMIZATIONS ──────────────────────────────────
-//! This is the scalar reference compression — one 64-byte block at a time,
-//! no SIMD. Measured ~200-250 MB/s/core in ReleaseFast (and ~10x slower in
-//! Debug — always benchmark in ReleaseFast). 100 GB ≈ ~7.5 min single core.
-//! Good enough as a baseline; for the multi-GB ProRes workload we'll want
-//! more. The headroom, highest leverage first:
-//!
-//!   1. Multithread across chunks (~Ncores, ~8x typical). BLAKE3's tree is
-//!      embarrassingly parallel: every chunk's CV is independent, so a thread
-//!      pool can hash chunk ranges concurrently and the cheap tree-combine
-//!      runs after. CPU-bound → use std.Thread, not the async io runtime.
-//!      The catch: `Bao.encodeReader`'s one-chunk lookahead is inherently
-//!      serial, so the parallel path needs a segmented producer (read big
-//!      blocks, dispatch chunk hashing, collect CVs in order) feeding the
-//!      tree — a new code path alongside the streaming one, not a tweak.
-//!   2. SIMD compression via `@Vector(8, u32)` (~5-10x/core). The real BLAKE3
-//!      speed source: a `hash_many` that compresses 8 (AVX2) / 16 (AVX-512)
-//!      independent chunks in parallel lanes. LLVM lowers portable @Vector to
-//!      AVX2/AVX-512/NEON. DONE: `hashManyContiguous` below compresses
-//!      `simd_degree` full chunks per iteration in parallel vector lanes.
-//!   3. Both → SIMD × cores ≈ GB/s. 100 GB in ~1 min. The production target.
-//!
-//! Any rewrite must keep producing identical roots — the `Bao.zig` tests
-//! cross-check `encodeReader`/`buildTree` roots and the ≤1-chunk stdlib match,
-//! so a faster compression that passes them is provably equivalent.
-//! The encode read buffer (`Bao.READ_BUF_SIZE`) is already sized above one
-//! chunk so a chunk fills in a single read.
-//!
-//! License: MIT (matches stdlib).
+//! Partial/root chunks use the scalar path. Bao.Parallel schedules independent
+//! subtrees across bounded worker threads. Tests compare optimized CVs with
+//! the scalar reference, including custom keys and counter carry. Performance
+//! measurements and limitations are recorded in bench/SCALING.md.
 
 const std = @import("std");
 const mem = std.mem;
+const native_kernel = @import("bao_options").native_kernel;
 
 pub const block_length: usize = 64;
 pub const digest_length: usize = 32;
@@ -222,9 +194,49 @@ pub fn parentHash(left_cv: [8]u32, right_cv: [8]u32, key: [8]u32, extra_flags: F
 
 // ---- SIMD many-chunk compression ----
 
-/// Number of independent chunks the vector kernel compresses per iteration
-/// (u32 lanes of the target's preferred vector width; 1 = no SIMD).
-pub const simd_degree: usize = std.simd.suggestVectorLength(u32) orelse 1;
+/// Independent chunks per batch: eight for the native AVX2 kernel, otherwise
+/// u32 lanes of the target's preferred vector width (1 = no SIMD).
+pub const simd_degree: usize = if (native_kernel) 8 else std.simd.suggestVectorLength(u32) orelse 1;
+
+// Upstream Rust FFI signature: src/ffi_avx2.rs (blake3 1.8.7). Each input
+// points to `blocks` consecutive 64-byte blocks, and each output is a
+// 32-byte little-endian chaining value. Only linked when native_kernel is on.
+extern fn blake3_hash_many_avx2(
+    inputs: [*]const [*]const u8,
+    num_inputs: usize,
+    blocks: usize,
+    key: *const [8]u32,
+    counter: u64,
+    increment_counter: bool,
+    flags: u8,
+    flags_start: u8,
+    flags_end: u8,
+    out: [*]u8,
+) callconv(.c) void;
+
+fn hashEightNative(data: []const u8, first_counter: u64, key: [8]u32, out: *[8][8]u32) void {
+    std.debug.assert(data.len == 8 * chunk_length);
+    var inputs: [8][*]const u8 = undefined;
+    for (&inputs, 0..) |*ptr, lane| ptr.* = data[lane * chunk_length ..].ptr;
+    var bytes: [8 * digest_length]u8 = undefined;
+    blake3_hash_many_avx2(
+        &inputs,
+        8,
+        chunk_length / block_length,
+        &key,
+        first_counter,
+        true,
+        0,
+        @as(Flags, .{ .chunk_start = true }).toInt(),
+        @as(Flags, .{ .chunk_end = true }).toInt(),
+        &bytes,
+    );
+    for (0..8) |lane| {
+        var cv_bytes: [digest_length]u8 = undefined;
+        @memcpy(&cv_bytes, bytes[lane * digest_length ..][0..digest_length]);
+        out[lane] = cvBytesToWords(cv_bytes);
+    }
+}
 
 /// Hash many consecutive FULL chunks at once. `data` must hold exactly
 /// `out.len` consecutive full chunks (`data.len == out.len * chunk_length`).
@@ -235,7 +247,11 @@ pub const simd_degree: usize = std.simd.suggestVectorLength(u32) orelse 1;
 pub fn hashManyContiguous(data: []const u8, first_counter: u64, key: [8]u32, out: [][8]u32) void {
     std.debug.assert(data.len == out.len * chunk_length);
     var i: usize = 0;
-    if (comptime simd_degree > 1) {
+    if (comptime native_kernel) {
+        while (i + 8 <= out.len) : (i += 8) {
+            hashEightNative(data[i * chunk_length ..][0 .. 8 * chunk_length], first_counter + i, key, out[i..][0..8]);
+        }
+    } else if (comptime simd_degree > 1) {
         while (i + simd_degree <= out.len) : (i += simd_degree) {
             chunkHashVec(
                 simd_degree,
@@ -344,6 +360,38 @@ fn chunkHashVec(comptime N: usize, data: []const u8, first_counter: u64, key: [8
     for (0..8) |w| {
         const lanes: [N]u32 = cv[w];
         for (0..N) |lane| out[lane][w] = lanes[lane];
+    }
+}
+
+test "native AVX2 batches, scalar tails, custom key, and 32-bit counter carry" {
+    if (!native_kernel) return;
+
+    const max_count = 19;
+    const data = try std.testing.allocator.alloc(u8, max_count * chunk_length);
+    defer std.testing.allocator.free(data);
+    for (data, 0..) |*byte, i| byte.* = @truncate((i *% 37) ^ (i >> 10) ^ (i >> 18));
+    const out = try std.testing.allocator.alloc([8]u32, max_count);
+    defer std.testing.allocator.free(out);
+
+    const key: [8]u32 = .{
+        0x12345678, 0xfedcba98, 0x0,        0xffffffff,
+        0x10203040, 0xabcdef01, 0x31415926, 0xdeadbeef,
+    };
+    // An eight-way batch itself crosses 2^32; later batches test the
+    // increment across calls. Including 0/1/7 checks the scalar-only tail.
+    const first_counter: u64 = 0xffff_fffc;
+    for ([_]usize{ 0, 1, 7, 8, 9, 15, 16, 19 }) |count| {
+        hashManyContiguous(data[0 .. count * chunk_length], first_counter, key, out[0..count]);
+        for (0..count) |i| {
+            const expected = chunkHash(
+                data[i * chunk_length ..][0..chunk_length],
+                first_counter + i,
+                key,
+                .{},
+            );
+            try std.testing.expectEqualSlices(u32, &expected, &out[i]);
+            try std.testing.expectEqualSlices(u8, &cvWordsToBytes(expected), &cvWordsToBytes(out[i]));
+        }
     }
 }
 

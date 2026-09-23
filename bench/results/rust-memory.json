@@ -1,0 +1,47 @@
+[
+  {
+    "implementation": "rust",
+    "mode": "outboard-memory",
+    "repeat": 1,
+    "input_bytes": 10737418240,
+    "cpu": 2,
+    "cache": "warm",
+    "seconds": 15.918983813142404,
+    "gib_per_second": 0.6281808008212304,
+    "user_seconds": 11.970075,
+    "system_seconds": 3.893869,
+    "output_bytes": 671088584,
+    "stdout": "7cec6ef9f4856da03cb13444c54d1217a79f273c9b282a707e55c7d13d01cc0e",
+    "stderr": ""
+  },
+  {
+    "implementation": "rust",
+    "mode": "outboard-memory",
+    "repeat": 2,
+    "input_bytes": 10737418240,
+    "cpu": 2,
+    "cache": "warm",
+    "seconds": 15.988189433934167,
+    "gib_per_second": 0.625461691038979,
+    "user_seconds": 11.79139,
+    "system_seconds": 3.9891500000000004,
+    "output_bytes": 671088584,
+    "stdout": "7cec6ef9f4856da03cb13444c54d1217a79f273c9b282a707e55c7d13d01cc0e",
+    "stderr": ""
+  },
+  {
+    "implementation": "rust",
+    "mode": "outboard-memory",
+    "repeat": 3,
+    "input_bytes": 10737418240,
+    "cpu": 2,
+    "cache": "warm",
+    "seconds": 16.005829288158566,
+    "gib_per_second": 0.6247723763615423,
+    "user_seconds": 11.815287999999999,
+    "system_seconds": 3.986367999999999,
+    "output_bytes": 671088584,
+    "stdout": "7cec6ef9f4856da03cb13444c54d1217a79f273c9b282a707e55c7d13d01cc0e",
+    "stderr": ""
+  }
+]

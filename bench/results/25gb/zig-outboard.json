@@ -1,0 +1,53 @@
+[
+  {
+    "implementation": "zig",
+    "mode": "outboard",
+    "repeat": 1,
+    "input_bytes": 25000000000,
+    "cpu": 2,
+    "cache": "warm",
+    "seconds": 19.236057138070464,
+    "resident_bytes_before": 19338313728,
+    "resident_bytes_after": 19364134912,
+    "gib_per_second": 1.2103865255893311,
+    "user_seconds": 5.047616,
+    "system_seconds": 3.1652869999999997,
+    "output_bytes": 3051720,
+    "stdout": "",
+    "stderr": "6079652bd05163dd91e70cf75ca09a1eb559dc2f8bb7e64d85bf9cf0548eaa23"
+  },
+  {
+    "implementation": "zig",
+    "mode": "outboard",
+    "repeat": 2,
+    "input_bytes": 25000000000,
+    "cpu": 2,
+    "cache": "warm",
+    "seconds": 19.512900503119454,
+    "resident_bytes_before": 19411292160,
+    "resident_bytes_after": 19391123456,
+    "gib_per_second": 1.1932139131066029,
+    "user_seconds": 5.053129,
+    "system_seconds": 3.154196,
+    "output_bytes": 3051720,
+    "stdout": "",
+    "stderr": "6079652bd05163dd91e70cf75ca09a1eb559dc2f8bb7e64d85bf9cf0548eaa23"
+  },
+  {
+    "implementation": "zig",
+    "mode": "outboard",
+    "repeat": 3,
+    "input_bytes": 25000000000,
+    "cpu": 2,
+    "cache": "warm",
+    "seconds": 19.577149201883003,
+    "resident_bytes_before": 19309522944,
+    "resident_bytes_after": 19391234048,
+    "gib_per_second": 1.1892979986660934,
+    "user_seconds": 5.09361,
+    "system_seconds": 3.1215770000000003,
+    "output_bytes": 3051720,
+    "stdout": "",
+    "stderr": "6079652bd05163dd91e70cf75ca09a1eb559dc2f8bb7e64d85bf9cf0548eaa23"
+  }
+]

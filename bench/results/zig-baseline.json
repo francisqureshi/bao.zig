@@ -1,0 +1,23 @@
+[
+  {
+    "build": "ReleaseFast baseline (both modules)",
+    "repeat": 1,
+    "seconds": 6.856245446018875,
+    "gib_per_second": 1.4585242139787407,
+    "root": "0651579e681d947ab80455ebcb0871f6febf6ebeab4021ed9809bcd00ed56749"
+  },
+  {
+    "build": "ReleaseFast baseline (both modules)",
+    "repeat": 2,
+    "seconds": 6.949603511020541,
+    "gib_per_second": 1.4389310101133397,
+    "root": "0651579e681d947ab80455ebcb0871f6febf6ebeab4021ed9809bcd00ed56749"
+  },
+  {
+    "build": "ReleaseFast baseline (both modules)",
+    "repeat": 3,
+    "seconds": 6.864590327022597,
+    "gib_per_second": 1.4567511713896166,
+    "root": "0651579e681d947ab80455ebcb0871f6febf6ebeab4021ed9809bcd00ed56749"
+  }
+]

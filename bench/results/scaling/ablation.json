@@ -1,0 +1,83 @@
+[
+  {
+    "variant": "original",
+    "repeat": 1,
+    "seconds": 3.5845012590289116,
+    "input_bytes": 10737418240,
+    "gib_per_second": 2.7897883910101156,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  },
+  {
+    "variant": "no-copy",
+    "repeat": 1,
+    "seconds": 3.280861715087667,
+    "input_bytes": 10737418240,
+    "gib_per_second": 3.0479797286222388,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  },
+  {
+    "variant": "native",
+    "repeat": 1,
+    "seconds": 2.7169800309929997,
+    "input_bytes": 10737418240,
+    "gib_per_second": 3.6805570471363414,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  },
+  {
+    "variant": "native",
+    "repeat": 2,
+    "seconds": 2.732462876010686,
+    "input_bytes": 10737418240,
+    "gib_per_second": 3.6597020540676843,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  },
+  {
+    "variant": "no-copy",
+    "repeat": 2,
+    "seconds": 3.3132933280430734,
+    "input_bytes": 10737418240,
+    "gib_per_second": 3.0181450930896867,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  },
+  {
+    "variant": "original",
+    "repeat": 2,
+    "seconds": 3.7461815050337464,
+    "input_bytes": 10737418240,
+    "gib_per_second": 2.6693848086546246,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  },
+  {
+    "variant": "original",
+    "repeat": 3,
+    "seconds": 3.603677044156939,
+    "input_bytes": 10737418240,
+    "gib_per_second": 2.7749434473364265,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  },
+  {
+    "variant": "no-copy",
+    "repeat": 3,
+    "seconds": 3.3062853950541466,
+    "input_bytes": 10737418240,
+    "gib_per_second": 3.0245422899544434,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  },
+  {
+    "variant": "native",
+    "repeat": 3,
+    "seconds": 2.7377183258067816,
+    "input_bytes": 10737418240,
+    "gib_per_second": 3.652676721975438,
+    "root": "75d88c6079d7bea1308ea39739cc43e06cb005960d9b42e6bd15a1a179649123",
+    "output_bytes": 1310664
+  }
+]

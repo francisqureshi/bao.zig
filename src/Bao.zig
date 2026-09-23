@@ -2,10 +2,10 @@
 //!
 //! Gives us, for large-file sync:
 //!   1. A 32-byte root hash for a file. Matches canonical BLAKE3 only for
-//!      files ≤ chunk_length bytes (single-chunk path). Larger files diverge
-//!      by tree shape — see blake3_lo.zig for rationale.
-//!   2. An "outboard" sidecar of every internal Merkle node CV.
-//!   3. (Future) slice extract + verify for sparse/resumable transfers.
+//!      inputs up to 1 KiB; larger files use custom 256 KiB hashing chunks.
+//!   2. An "outboard" sidecar of non-root internal Merkle node CVs.
+//!   3. Slice extraction/verification and streaming content verification.
+//!   4. Bounded parallel file encoding via Bao.Parallel.
 //!
 //! Sidecar format (NOT bao-tool compatible — own format until interop wired):
 //!
@@ -25,12 +25,18 @@ const blake3 = @import("blake3_lo.zig");
 const Bao = @This();
 
 pub const Hash = [blake3.digest_length]u8;
+/// Bounded worker-thread encoding into a positional outboard file.
+pub const Parallel = @import("Parallel.zig");
+
+test {
+    _ = Parallel;
+}
 /// Re-exported so callers can size splits/buffers in chunks without reaching
 /// into blake3_lo.
 pub const chunk_length = blake3.chunk_length;
 // 1 MiB: must be >= chunk_length (256 KiB) so a chunk fills in one underlying
 // read instead of several. The encoder batches reads of up to simd_degree
-// chunks and hashes them via SIMD; multithreading is the remaining speedup.
+// chunks and hashes them via SIMD; Parallel schedules independent subtrees.
 pub const READ_BUF_SIZE = 1024 * 1024;
 
 const log = std.log.scoped(.bao);
@@ -61,10 +67,9 @@ pub fn encodeFile(
 /// Core encoder: stream `content_length` bytes from `r`, emit outboard to
 /// `out_writer`, return root + counts.
 ///
-/// Batched read with a one-piece carry: each read pulls up to `simd_degree`
-/// chunks; everything but the final piece of the buffer is confirmed
-/// not-last and hashed in bulk via `hashManyContiguous`. The final piece is
-/// carried until EOF so the ROOT flag can go on it (single-chunk file) or on
+/// Batched reads hash known non-final chunks via `hashManyContiguous`.
+/// The declared length identifies the final chunk without lookahead or
+/// moving a carry buffer. ROOT goes on that chunk (single-chunk file) or on
 /// the final parent merge that includes it (multi-chunk file). Root CV is
 /// NOT emitted to the outboard — the verifier reconstructs it from its
 /// children.
@@ -130,64 +135,42 @@ fn encodeSubtreeCore(
     var stack_len: usize = 0;
     var n_internal: u64 = 0;
 
-    // Batch buffer: carry (≤ 1 chunk, the possibly-last piece) at the front
-    // plus one batch read of up to BATCH_CHUNKS full chunks.
-    const BATCH_CHUNKS = blake3.simd_degree; // 1 ⇒ degenerates to one-chunk flow
-    var buf: [(BATCH_CHUNKS + 1) * blake3.chunk_length]u8 = undefined;
-    var carry_len: usize = 0; // bytes of the held-back piece at buf[0..]
-    var counter = start_counter; // GLOBAL counter of the oldest unhashed piece
-    var local: u64 = 0; // LOCAL chunk index (drives popcount / tree shape)
-    var read_remaining = segment_len; // bytes not yet pulled from `r`
+    // The exact length lets us reserve the last chunk without copying it
+    // between batches. Reuse the batch buffer for the final scalar chunk.
+    const BATCH_CHUNKS = blake3.simd_degree;
+    var buf: [BATCH_CHUNKS * blake3.chunk_length]u8 = undefined;
+    var counter = start_counter;
+    var local: u64 = 0;
+    const nonfinal_chunks = (segment_len - 1) / blake3.chunk_length;
 
-    while (read_remaining > 0) {
-        const cap: u64 = BATCH_CHUNKS * blake3.chunk_length;
-        const want: usize = @intCast(@min(cap, read_remaining));
-        const n = try r.readSliceShort(buf[carry_len..][0..want]);
-        if (n == 0) return error.UnexpectedEof; // segment_len promised more
-        read_remaining -= n;
-        const total = carry_len + n;
-        const full_pieces = total / blake3.chunk_length;
-        const tail = total % blake3.chunk_length;
-        // Everything before the FINAL piece of `total` is confirmed not-last.
-        const hashable = if (tail == 0) full_pieces - 1 else full_pieces;
+    while (local < nonfinal_chunks) {
+        const hashable: usize = @intCast(@min(BATCH_CHUNKS, nonfinal_chunks - local));
+        const want = hashable * blake3.chunk_length;
+        if (try r.readSliceShort(buf[0..want]) != want) return error.UnexpectedEof;
+        var cvs: [BATCH_CHUNKS][8]u32 = undefined;
+        blake3.hashManyContiguous(buf[0..want], counter, blake3.iv, cvs[0..hashable]);
+        for (cvs[0..hashable]) |cv| {
+            stack[stack_len] = cv;
+            stack_len += 1;
 
-        if (hashable > 0) {
-            std.debug.assert(hashable <= BATCH_CHUNKS);
-            var cvs: [BATCH_CHUNKS][8]u32 = undefined;
-            blake3.hashManyContiguous(
-                buf[0 .. hashable * blake3.chunk_length],
-                counter,
-                blake3.iv,
-                cvs[0..hashable],
-            );
-            for (cvs[0..hashable]) |cv| {
-                stack[stack_len] = cv;
-                stack_len += 1;
-
-                const processed = local + 1;
-                const target_len: usize = @popCount(processed);
-                while (stack_len > target_len) {
-                    const left = stack[stack_len - 2];
-                    const right = stack[stack_len - 1];
-                    const parent = blake3.parentHash(left, right, blake3.iv, .{});
-                    stack[stack_len - 2] = parent;
-                    stack_len -= 1;
-                    try writeCv(out, parent);
-                    n_internal += 1;
-                }
-                counter += 1;
-                local += 1;
+            const processed = local + 1;
+            const target_len: usize = @popCount(processed);
+            while (stack_len > target_len) {
+                const left = stack[stack_len - 2];
+                const right = stack[stack_len - 1];
+                const parent = blake3.parentHash(left, right, blake3.iv, .{});
+                stack[stack_len - 2] = parent;
+                stack_len -= 1;
+                try writeCv(out, parent);
+                n_internal += 1;
             }
+            counter += 1;
+            local += 1;
         }
-
-        // Move the final piece (the new carry) to the front.
-        const carry_start = hashable * blake3.chunk_length;
-        const new_carry_len = total - carry_start; // in [1, chunk_length]
-        if (carry_start != 0) std.mem.copyForwards(u8, buf[0..new_carry_len], buf[carry_start..total]);
-        carry_len = new_carry_len;
     }
 
-    std.debug.assert(carry_len > 0);
+    const carry_len: usize = @intCast(segment_len - local * blake3.chunk_length);
+    if (try r.readSliceShort(buf[0..carry_len]) != carry_len) return error.UnexpectedEof;
     const total_chunks: u64 = local + 1;
 
     // Single-chunk subtree: the carry IS the whole subtree.
@@ -1221,8 +1204,7 @@ pub fn verifiedSeek(
     // every touched chunk. Upper bound: 24 + 32*depth*2 + chunk_length *
     // ceil(len/chunk_length) + 2*chunk_length (boundary slack).
     const chunk = blake3.chunk_length;
-    const touched_chunks: u64 = if (len == 0) 0 else
-        ((offset + len + chunk - 1) / chunk) - (offset / chunk);
+    const touched_chunks: u64 = if (len == 0) 0 else ((offset + len + chunk - 1) / chunk) - (offset / chunk);
     // Depth ≈ ceil(log2(n_chunks)) + 1. Use 64 to be safe (covers 2^64 chunks).
     const overhead: usize = 24 + 32 * 128;
     const slice_cap: usize = overhead + @as(usize, @intCast(touched_chunks)) * chunk;
@@ -1525,6 +1507,27 @@ pub const Verifier = struct {
 
 const testing = std.testing;
 
+test "encoder honors declared length and rejects short input" {
+    const content = try testing.allocator.alloc(u8, (blake3.simd_degree + 1) * chunk_length + 17);
+    defer testing.allocator.free(content);
+    @memset(content, 0x5a);
+    const sizes = [_]usize{ 1, chunk_length, chunk_length + 1, blake3.simd_degree * chunk_length + 1 };
+    for (sizes) |size| {
+        var short = std.Io.Reader.fixed(content[0 .. size - 1]);
+        var discard: std.Io.Writer.Discarding = .init(&.{});
+        try testing.expectError(error.UnexpectedEof, encodeReader(&short, size, &discard.writer));
+
+        var extra = std.Io.Reader.fixed(content[0 .. size + 1]);
+        var sink: std.Io.Writer.Discarding = .init(&.{});
+        const result = try encodeReader(&extra, size, &sink.writer);
+        try testing.expectEqual(size, result.content_length);
+        try testing.expectEqual(@as(usize, 1), extra.bufferedLen());
+        var tree = try buildTree(testing.allocator, content[0..size]);
+        defer tree.deinit();
+        try testing.expectEqualSlices(u8, &tree.root, &result.root);
+    }
+}
+
 fn checkSize(alloc: std.mem.Allocator, content: []const u8) !void {
     var in = std.Io.Reader.fixed(content);
     // Outboard: 8 byte header + 32 * n_internal. Bound by n_chunks - 1.
@@ -1550,12 +1553,11 @@ test "Bao encode/buildTree root agree across sizes" {
     const chunk = blake3.chunk_length;
     const sizes = [_]usize{
         // Small / single-chunk boundary coverage.
-        0,        1,        63,       64,        500,         1023,
-        1024,     1025,     2048,     3072,      4096,        7000,
-        100_000,  200_000,
+        0,         1,       63,    64,        500,       1023,
+        1024,      1025,    2048,  3072,      4096,      7000,
+        100_000,   200_000,
         // Multi-chunk under 256 KiB regime.
-        chunk,    chunk + 1,
-        2 * chunk, 2 * chunk + 1,
+        chunk, chunk + 1, 2 * chunk, 2 * chunk + 1,
         1_000_000,
         // SIMD batch boundaries (simd_degree may be 1 — duplicates harmless).
         blake3.simd_degree * chunk, // exactly one full vector batch
@@ -1574,11 +1576,9 @@ test "Bao encode/buildTree root agree across sizes" {
 test "buildTree round-trips with encodeReader root" {
     const chunk = blake3.chunk_length;
     const sizes = [_]usize{
-        0,        1,        1024,     1025,      2048,        3072,
-        4096,     7000,     100_000,  200_000,
-        chunk,    chunk + 1,
-        2 * chunk, 2 * chunk + 1,
-        1_000_000,
+        0,         1,             1024,      1025,    2048,  3072,
+        4096,      7000,          100_000,   200_000, chunk, chunk + 1,
+        2 * chunk, 2 * chunk + 1, 1_000_000,
     };
     for (sizes) |sz| {
         const content = try testing.allocator.alloc(u8, sz);
@@ -1642,8 +1642,8 @@ fn oracleParallel(
 test "parallel subtree encode is byte-identical to encodeReader" {
     const chunk = blake3.chunk_length;
     const sizes = [_]usize{
-        0,          1,          100,         chunk - 1,      chunk,      chunk + 1,
-        2 * chunk,  3 * chunk,  4 * chunk,   5 * chunk,      7 * chunk,  8 * chunk,
+        0,             1,             100,        chunk - 1,  chunk,               chunk + 1,
+        2 * chunk,     3 * chunk,     4 * chunk,  5 * chunk,  7 * chunk,           8 * chunk,
         8 * chunk + 1, 8 * chunk - 1, 16 * chunk, 17 * chunk, 13 * chunk + 12_345,
     };
     // Segment sizes: C=1 reduces the combiner to encodeReader itself; larger
@@ -1681,8 +1681,8 @@ test "parallel subtree encode is byte-identical to encodeReader" {
 test "positional parallel assembly is byte-identical to encodeReader" {
     const chunk = blake3.chunk_length;
     const sizes = [_]usize{
-        0,          1,          100,         chunk - 1,      chunk,      chunk + 1,
-        2 * chunk,  3 * chunk,  4 * chunk,   5 * chunk,      7 * chunk,  8 * chunk,
+        0,             1,             100,        chunk - 1,  chunk,               chunk + 1,
+        2 * chunk,     3 * chunk,     4 * chunk,  5 * chunk,  7 * chunk,           8 * chunk,
         8 * chunk + 1, 8 * chunk - 1, 16 * chunk, 17 * chunk, 13 * chunk + 12_345,
     };
     const seg_cs = [_]u64{ 1, 2, 4, 8 };
@@ -1847,9 +1847,9 @@ test "extract+verify slice round-trips" {
         .{ .off = 0, .len = 100 },
         .{ .off = 1000, .len = 100 },
         .{ .off = 200_000, .len = 200_000 }, // crosses chunk 0 → 1
-        .{ .off = 262_143, .len = 2 },       // straddles chunk 0 / 1 boundary
+        .{ .off = 262_143, .len = 2 }, // straddles chunk 0 / 1 boundary
         .{ .off = 500_000, .len = 300_000 }, // crosses chunk 1 → 2 → 3
-        .{ .off = 0, .len = content_len },   // whole file
+        .{ .off = 0, .len = content_len }, // whole file
         .{ .off = content_len - 50, .len = 50 },
     };
 
@@ -2059,11 +2059,11 @@ test "extractSliceFromOutboard round-trips with verifySlice" {
     const ranges = [_]struct { off: u64, len: u64 }{
         .{ .off = 0, .len = 100 },
         .{ .off = 1234, .len = 4321 },
-        .{ .off = chunk - 5, .len = 10 },                // crosses 0→1
-        .{ .off = chunk * 2 - 1, .len = chunk + 2 },     // crosses 1→2→3
-        .{ .off = 0, .len = content_len },               // whole file
-        .{ .off = content_len - 99, .len = 99 },         // tail
-        .{ .off = chunk * 3, .len = 1 },                 // single chunk middle
+        .{ .off = chunk - 5, .len = 10 }, // crosses 0→1
+        .{ .off = chunk * 2 - 1, .len = chunk + 2 }, // crosses 1→2→3
+        .{ .off = 0, .len = content_len }, // whole file
+        .{ .off = content_len - 99, .len = 99 }, // tail
+        .{ .off = chunk * 3, .len = 1 }, // single chunk middle
     };
 
     const slice_buf = try testing.allocator.alloc(u8, 2 * content_len + 65_536);

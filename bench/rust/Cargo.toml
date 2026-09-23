@@ -1,0 +1,11 @@
+[package]
+name = "bao-rust-bench"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bao = "=0.13.1"
+blake3 = "=1.8.7"
+
+[profile.release]
+debug = false
