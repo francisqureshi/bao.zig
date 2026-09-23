@@ -47,7 +47,7 @@ def prepare(files, cache):
 
 
 def encode(path, workers, parallel):
-    output = result / (path.name + ".bao")
+    output = result / (path.name + ".bough")
     command = [exe, "parallel" if parallel else "outboard", str(path), str(output)]
     if parallel:
         command.append(str(workers))

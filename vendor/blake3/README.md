@@ -11,7 +11,7 @@ Upstream licenses, included verbatim here: `LICENSE_CC0` (CC0-1.0),
 exception). Upstream offers these as alternatives.
 
 The exported `blake3_hash_many_avx2` routine compresses independent input
-chunks with a caller-supplied block count and key. Bao uses 4096 blocks per
+chunks with a caller-supplied block count and key. Bough uses 4096 blocks per
 256 KiB chunk (not upstream's default 1024-byte chunk) and does not use this
 routine for ROOT chunks. Build with `-Dnative-kernel=true` only for an
 x86_64 Linux target with AVX2 enabled; the default build uses Zig's vector

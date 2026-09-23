@@ -1,13 +1,13 @@
-//! Bao-style verified-streaming hash on top of BLAKE3.
+//! Bough: Bao-inspired verified streaming with BLAKE3-derived hashing.
 //!
 //! Gives us, for large-file sync:
 //!   1. A 32-byte root hash for a file. Matches canonical BLAKE3 only for
 //!      inputs up to 1 KiB; larger files use custom 256 KiB hashing chunks.
 //!   2. An "outboard" sidecar of non-root internal Merkle node CVs.
 //!   3. Slice extraction/verification and streaming content verification.
-//!   4. Bounded parallel file encoding via Bao.Parallel.
+//!   4. Bounded parallel file encoding via Bough.Parallel.
 //!
-//! Sidecar format (NOT bao-tool compatible — own format until interop wired):
+//! Bough sidecar format (NOT compatible with upstream Bao):
 //!
 //!   [ 8 bytes  ] content_length (little-endian u64)
 //!   [ 32 × M   ] parent CVs in COMPUTE order (post-order DFS over internal
@@ -22,7 +22,7 @@
 const std = @import("std");
 const blake3 = @import("blake3_lo.zig");
 
-const Bao = @This();
+const Bough = @This();
 
 pub const Hash = [blake3.digest_length]u8;
 /// Bounded worker-thread encoding into a positional outboard file.
@@ -39,7 +39,7 @@ pub const chunk_length = blake3.chunk_length;
 // chunks and hashes them via SIMD; Parallel schedules independent subtrees.
 pub const READ_BUF_SIZE = 1024 * 1024;
 
-const log = std.log.scoped(.bao);
+const log = std.log.scoped(.bough);
 
 pub const Encoded = struct {
     root: Hash,
@@ -1549,7 +1549,7 @@ fn checkSize(alloc: std.mem.Allocator, content: []const u8) !void {
     try testing.expectEqual(expected_out_len, out_w.end);
 }
 
-test "Bao encode/buildTree root agree across sizes" {
+test "Bough encode/buildTree root agree across sizes" {
     const chunk = blake3.chunk_length;
     const sizes = [_]usize{
         // Small / single-chunk boundary coverage.

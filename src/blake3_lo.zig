@@ -11,14 +11,14 @@
 //! Increasing wire-level chunk groups while keeping canonical hashing would
 //! be a different design; see oconnor663/bao#34.
 //!
-//! Partial/root chunks use the scalar path. Bao.Parallel schedules independent
+//! Partial/root chunks use the scalar path. Bough.Parallel schedules independent
 //! subtrees across bounded worker threads. Tests compare optimized CVs with
 //! the scalar reference, including custom keys and counter carry. Performance
 //! measurements and limitations are recorded in bench/SCALING.md.
 
 const std = @import("std");
 const mem = std.mem;
-const native_kernel = @import("bao_options").native_kernel;
+const native_kernel = @import("bough_options").native_kernel;
 
 pub const block_length: usize = 64;
 pub const digest_length: usize = 32;

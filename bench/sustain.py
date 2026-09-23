@@ -45,7 +45,7 @@ def temperatures():
 
 
 def encode(path):
-    run = subprocess.run([exe, 'outboard', str(path), str(result / (path.name + '.bao'))],
+    run = subprocess.run([exe, 'outboard', str(path), str(result / (path.name + '.bough'))],
                          capture_output=True, text=True, check=True, timeout=60)
     return path.name, (run.stdout or run.stderr).strip()
 

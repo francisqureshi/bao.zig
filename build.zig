@@ -15,27 +15,27 @@ pub fn build(b: *std.Build) void {
     options.addOption(bool, "native_kernel", native_kernel);
 
     // Exposed module. Named with ".zig" suffix per the Karl Seguin / pg.zig
-    // convention so consumers write `@import("bao.zig")`.
-    const bao_mod = b.addModule("bao.zig", .{
-        .root_source_file = b.path("src/Bao.zig"),
+    // convention so consumers write `@import("bough.zig")`.
+    const bough_mod = b.addModule("bough.zig", .{
+        .root_source_file = b.path("src/Bough.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    bao_mod.addOptions("bao_options", options);
+    bough_mod.addOptions("bough_options", options);
     if (native_kernel) {
-        // Keep this on the exported module so b.dependency("bao", ...).module("bao.zig")
+        // Keep this on the exported module so b.dependency("bough", ...).module("bough.zig")
         // automatically brings the assembly into consumer executables too.
-        bao_mod.addAssemblyFile(b.path("vendor/blake3/blake3_avx2_x86-64_unix.S"));
+        bough_mod.addAssemblyFile(b.path("vendor/blake3/blake3_avx2_x86-64_unix.S"));
     }
 
     const bench = b.addExecutable(.{
-        .name = "bao-bench",
+        .name = "bough-bench",
         .root_module = b.createModule(.{
             .root_source_file = b.path("bench/main.zig"),
             .target = target,
             .optimize = optimize,
-            .imports = &.{.{ .name = "bao", .module = bao_mod }},
+            .imports = &.{.{ .name = "bough", .module = bough_mod }},
         }),
     });
     const install_bench = b.addInstallArtifact(bench, .{});
@@ -43,12 +43,12 @@ pub fn build(b: *std.Build) void {
     const bench_step = b.step("bench", "Build and install the benchmark driver (does not run it)");
     bench_step.dependOn(&install_bench.step);
 
-    // Tests: run the `test` blocks inside Bao.zig and blake3_lo.zig.
-    const bao_tests = b.addTest(.{
-        .root_module = bao_mod,
+    // Tests: run the `test` blocks inside Bough.zig and blake3_lo.zig.
+    const bough_tests = b.addTest(.{
+        .root_module = bough_mod,
     });
-    const run_bao_tests = b.addRunArtifact(bao_tests);
+    const run_bough_tests = b.addRunArtifact(bough_tests);
 
-    const test_step = b.step("test", "Run bao.zig tests");
-    test_step.dependOn(&run_bao_tests.step);
+    const test_step = b.step("test", "Run bough.zig tests");
+    test_step.dependOn(&run_bough_tests.step);
 }

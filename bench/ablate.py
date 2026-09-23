@@ -26,7 +26,7 @@ for repeat in range(3):
         with open(source, 'rb', buffering=0) as f:
             while f.read(8 * 1024 * 1024):
                 pass
-        output = result / (name + '.bao')
+        output = result / (name + '.bough')
         tick = time.perf_counter()
         run = subprocess.run([exe, 'outboard', source, str(output)],
                              capture_output=True, text=True, check=True, timeout=60)

@@ -5,6 +5,8 @@
 These are the **pre-optimization** results. See [SCALING.md](SCALING.md) for the
 new native backend, parallel encoding, and full-load experiments. Also see the
 [25 GB single-core rematch](RACE-25GB.md), which includes measured cache residency.
+These historical results predate the rename to bough.zig; hashes and the outboard
+format are unchanged.
 
 10 GiB (10,737,418,240 bytes), AMD Ryzen 7 5800X, Linux, 32 GiB RAM,
 one process pinned to logical CPU 2. Three runs per case; medians below.
@@ -67,14 +69,14 @@ included in the tables.
 
 ## Reproduce
 
-The Zig driver measures `Bao.hashFile` or `Bao.encodeFile` including file I/O.
+The Zig driver measures `Bough.hashFile` or `Bough.encodeFile` including file I/O.
 The current build system configures both modules and the backend options, from
 the repository root (current source includes the no-copy optimization; use the
 recorded original revision to reproduce the historical implementation):
 
 ```sh
 zig build bench -Doptimize=ReleaseFast -Dcpu=native -Dnative-kernel=false
-cp zig-out/bin/bao-bench /tmp/zig-bao-bench
+cp zig-out/bin/bough-bench /tmp/zig-bough-bench
 
 CARGO_TARGET_DIR=/tmp/bao-rust-target RUSTFLAGS='-C target-cpu=native' \
   cargo build --release --locked --manifest-path bench/rust/Cargo.toml
@@ -96,7 +98,7 @@ with open('/tmp/bao-benchmark/input.bin', 'xb') as f:
     os.fsync(f.fileno())
 PY
 
-BENCH_CPU=2 python3 bench/run.py /tmp/zig-bao-bench \
+BENCH_CPU=2 python3 bench/run.py /tmp/zig-bough-bench \
   /tmp/bao-rust-target/release/bao-rust-bench \
   /tmp/bao-benchmark/input.bin /tmp/bao-benchmark/warm 3
 ```

@@ -6,7 +6,7 @@
   already identifies the final chunk, so lookahead/copying is unnecessary.
 - Added an **opt-in** upstream BLAKE3 1.8.7 AVX2 assembly backend, invoked with
   4096 blocks per custom 256 KiB chunk. Scalar and Zig-vector paths remain.
-- Added `Bao.Parallel.encodeFile`: 1–16 bounded worker threads, disjoint
+- Added `Bough.Parallel.encodeFile`: 1–16 bounded worker threads, disjoint
   positional reads/writes, then positional subtree assembly. It does not load
   a whole file or outboard into memory. Each worker reserves a 16 MiB stack;
   segment roots are bounded by the worker count. All workers are joined before
@@ -152,9 +152,9 @@ zig build bench -Doptimize=ReleaseFast -Dcpu=native -Dnative-kernel=true
 zig build test -Doptimize=ReleaseFast -Dcpu=native -Dnative-kernel=true
 
 # Root + outboard, with a bounded within-file worker pool:
-zig-out/bin/bao-bench parallel INPUT OUTPUT 8
+zig-out/bin/bough-bench parallel INPUT OUTPUT 8
 # Existing sequential path:
-zig-out/bin/bao-bench outboard INPUT OUTPUT
+zig-out/bin/bough-bench outboard INPUT OUTPUT
 ```
 
 These benchmark commands overwrite OUTPUT; it must never alias INPUT. Build
@@ -170,11 +170,11 @@ Generate the dataset with the same pattern as the earlier benchmark (see
 `shard-00.bin` through `shard-15.bin`, and `fsync` before starting. Then:
 
 ```sh
-python3 bench/scale.py zig-out/bin/bao-bench DATA RESULTS/scaling 400
-python3 bench/sustain.py zig-out/bin/bao-bench DATA RESULTS/sustained 30
+python3 bench/scale.py zig-out/bin/bough-bench DATA RESULTS/scaling 400
+python3 bench/sustain.py zig-out/bin/bough-bench DATA RESULTS/sustained 30
 BENCH_WORKERS=16 BENCH_WORKLOADS=across-files BENCH_REPEATS=3 \
   BENCH_AFFINITY_LIMIT=8 python3 bench/scale.py \
-  zig-out/bin/bao-bench DATA RESULTS/io-concurrency 90
+  zig-out/bin/bough-bench DATA RESULTS/io-concurrency 90
 ```
 
 The scaling script discovers CPU topology, warms/evicts input per case, records
